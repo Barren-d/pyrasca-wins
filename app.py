@@ -293,7 +293,7 @@ def page_picks(df: pd.DataFrame) -> None:
 
     with st.sidebar:
         st.header("Filter by price")
-        available_prices = sorted(df["price"].dropna().unique().tolist())
+        available_prices = sorted(df["price"].dropna().unique().tolist(), reverse=True)
         price_filter = st.selectbox("Ticket price (€)", ["All"] + [str(p) for p in available_prices])
 
     filtered = df.copy()

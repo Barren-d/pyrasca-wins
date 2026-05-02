@@ -143,6 +143,23 @@ def _recalculate_ev(empirical_retention) -> None:
     client = get_client()
     today = date.today()
 
+    # Floor on scraping_days: the earliest moment we've actually been observing
+    # the claimed-prizes carousel. games.first_seen records when each game was
+    # added to our DB, but for old games that predates the claimed scraper —
+    # using it would overstate scraping_days and let the depletion MLE run on
+    # thin claim data. (See depletion.py MIN_SCRAPING_DAYS guard.)
+    earliest_claim_row = (
+        client.table("claimed_prizes")
+        .select("first_seen")
+        .order("first_seen")
+        .limit(1)
+        .execute()
+        .data
+    )
+    claims_observation_start = (
+        _parse_date(earliest_claim_row[0]["first_seen"]) if earliest_claim_row else None
+    )
+
     # fetch all active games with their latest snapshot per price
     games_rows = (
         client.table("games")
@@ -155,7 +172,8 @@ def _recalculate_ev(empirical_retention) -> None:
     for game_row in games_rows:
         game_id = game_row["game_id"]
         game_start = _parse_date(game_row.get("game_start"))
-        scrape_start = _parse_date(game_row.get("first_seen"))
+        game_first_seen = _parse_date(game_row.get("first_seen"))
+        scrape_start = _floor_scrape_start(game_first_seen, claims_observation_start)
 
         # latest snapshot per price
         snapshots = (
@@ -220,6 +238,14 @@ def _parse_date(value: str | None) -> date | None:
         return datetime.fromisoformat(value).date()
     except (ValueError, TypeError):
         return None
+
+
+def _floor_scrape_start(game_first_seen: date | None, claims_observation_start: date | None) -> date | None:
+    """The later of game-first-seen and claims-scraper-start defines when we
+    were actually capable of observing claims for this game."""
+    if game_first_seen and claims_observation_start:
+        return max(game_first_seen, claims_observation_start)
+    return game_first_seen or claims_observation_start
 
 
 if __name__ == "__main__":

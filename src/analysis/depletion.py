@@ -63,13 +63,12 @@ def compute_adj_ev(
         # condition (a): retention sufficient
         if ret < min_retention:
             continue
-        # condition (b) + (c): only tiers with matched claims (prize_tier_id non-NULL)
-        # represented here by the claim_by_amount lookup being populated from matched rows
-        if amt not in claim_by_amount and claim_by_amount.get(amt, 0) == 0:
-            # no observed claims is valid — it contributes 0 to numerator
-            pass
-
+        # condition (b): must have at least one matched claim; tiers with c_i=0
+        # can't be distinguished from matching failures, so use baseline for them.
         c_i = claim_by_amount.get(amt, 0)
+        if c_i == 0:
+            continue
+
         observable.append({
             "tier": tier,
             "amt": amt,
