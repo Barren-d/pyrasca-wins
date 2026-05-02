@@ -104,34 +104,66 @@ def _parse_claimed_at(raw: str) -> str | None:
 
 
 def match_prize_tier_ids(claims: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Attempt to link each claim to a prize_tier_id where unambiguous."""
+    """Attempt to link each claim to a prize_tier_id where unambiguous.
+
+    Restricts the candidate pool to the LATEST snapshot per (game, price) — older
+    snapshots contain the same logical tiers under different tier_ids, which would
+    spuriously inflate the unambiguity count.
+
+    Two-step query rather than an embedded join — supabase-py's filter on a nested
+    table (.in_("game_snapshots.game_id", …)) is unreliable.
+    """
     if not claims:
         return claims
 
     client = get_client()
-
-    # build lookup: (game_id, prize_amount) → [tier_id, ...]
     game_ids = list({c["game_id"] for c in claims if c.get("game_id")})
+    if not game_ids:
+        for claim in claims:
+            claim["prize_tier_id"] = None
+        return claims
+
+    # Step 1 — all snapshots, ordered newest first, so the dict pickup keeps the latest
+    snap_rows = (
+        client.table("game_snapshots")
+        .select("snapshot_id, game_id, price, scraped_at")
+        .in_("game_id", game_ids)
+        .order("scraped_at", desc=True)
+        .execute()
+        .data
+    )
+    latest_snap_per_price: dict[tuple, str] = {}
+    for r in snap_rows:
+        key = (r["game_id"], float(r["price"]))
+        if key not in latest_snap_per_price:
+            latest_snap_per_price[key] = r["snapshot_id"]
+    if not latest_snap_per_price:
+        for claim in claims:
+            claim["prize_tier_id"] = None
+        return claims
+
+    snap_to_game: dict[str, str] = {sid: g for (g, _), sid in latest_snap_per_price.items()}
+
+    # Step 2 — prize tiers under those latest snapshots only
     tier_rows = (
         client.table("prize_tiers")
-        .select("tier_id, prize_amount, snapshot_id, game_snapshots(game_id)")
-        .in_("game_snapshots.game_id", game_ids)
+        .select("tier_id, prize_amount, snapshot_id")
+        .in_("snapshot_id", list(snap_to_game.keys()))
         .execute()
         .data
     )
 
     from collections import defaultdict
-    tier_map: dict[tuple, list[str]] = defaultdict(list)
+    tier_map: dict[tuple, set] = defaultdict(set)
     for row in tier_rows:
-        snap = row.get("game_snapshots") or {}
-        gid = snap.get("game_id")
+        gid = snap_to_game.get(row["snapshot_id"])
         if gid:
-            tier_map[(gid, float(row["prize_amount"]))].append(row["tier_id"])
+            tier_map[(gid, float(row["prize_amount"]))].add(row["tier_id"])
 
     for claim in claims:
         key = (claim.get("game_id"), claim.get("prize_amount"))
-        tier_ids = tier_map.get(key, [])
-        # only set if exactly one tier matches (unambiguous)
-        claim["prize_tier_id"] = tier_ids[0] if len(tier_ids) == 1 else None
+        tier_ids = tier_map.get(key, set())
+        # exactly one tier across the game's latest snapshots → unambiguous match
+        claim["prize_tier_id"] = next(iter(tier_ids)) if len(tier_ids) == 1 else None
 
     return claims

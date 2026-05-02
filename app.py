@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime, timezone
 
 from src.db.client import get_client
+from src.analysis.retention import retention_days
 
 st.set_page_config(page_title="pyRasca", page_icon="🎟️", layout="wide")
 
@@ -45,19 +46,22 @@ def load_latest_snapshots() -> pd.DataFrame:
     game_ids = df["game_id"].dropna().unique().tolist()
     games_rows = (
         client.table("games")
-        .select("game_id, name, img_url, url, game_start")
+        .select("game_id, name, img_url, url, game_start, first_seen")
         .in_("game_id", game_ids)
         .execute()
         .data
     )
     if games_rows:
-        games_df = pd.DataFrame(games_rows).rename(columns={"url": "game_url"})
+        games_df = pd.DataFrame(games_rows).rename(
+            columns={"url": "game_url", "first_seen": "scrape_first_seen"}
+        )
         df = df.merge(games_df, on="game_id", how="left")
     else:
         df["name"] = None
         df["img_url"] = None
         df["game_url"] = None
         df["game_start"] = None
+        df["scrape_first_seen"] = None
 
     # keep only the latest snapshot per game × price
     df["scraped_at"] = pd.to_datetime(df["scraped_at"], utc=True)
@@ -78,7 +82,7 @@ def load_ev_history(game_id: str) -> pd.DataFrame:
     client = get_client()
     rows = (
         client.table("game_snapshots")
-        .select("scraped_at, price, expected_return_per_euro, adj_expected_return_per_euro")
+        .select("scraped_at, ev_recomputed_at, price, expected_return_per_euro, adj_expected_return_per_euro")
         .eq("game_id", game_id)
         .order("scraped_at")
         .execute()
@@ -88,6 +92,9 @@ def load_ev_history(game_id: str) -> pd.DataFrame:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
     df["scraped_at"] = pd.to_datetime(df["scraped_at"], utc=True)
+    df["ev_recomputed_at"] = pd.to_datetime(df.get("ev_recomputed_at"), utc=True, errors="coerce")
+    # x-axis: claimed-scrape recompute time when available, else original snapshot time
+    df["as_of"] = df["ev_recomputed_at"].fillna(df["scraped_at"])
     df["ev_base"] = pd.to_numeric(df["expected_return_per_euro"], errors="coerce")
     df["ev_adj"] = pd.to_numeric(df["adj_expected_return_per_euro"], errors="coerce")
     return df
@@ -176,6 +183,15 @@ def confidence_badge(row: pd.Series) -> str:
     return "🟢"
 
 
+def format_sell_through(sell: float | None, low_confidence: bool = False) -> str:
+    """Render sell-through as a percentage. Flag age-prior estimates with an 'est.'
+    prefix so users don't mistake fallback values for measurements."""
+    if sell is None or pd.isna(sell):
+        return "—"
+    pct = sell * 100
+    return f"est. {pct:.1f}%" if low_confidence else f"{pct:.1f}%"
+
+
 def ev_color(ev_per_euro: float | None) -> str:
     if ev_per_euro is None:
         return "gray"
@@ -186,15 +202,49 @@ def ev_color(ev_per_euro: float | None) -> str:
     return "red"
 
 
-def prize_status(prize_amount: float, claimed_df: pd.DataFrame, occurrences: int) -> str:
-    if claimed_df.empty:
-        return "Available"
-    count = len(claimed_df[claimed_df["prize_amount"] == prize_amount])
-    if count == 0:
-        return "Available"
+def prize_status(
+    prize_amount: float,
+    claimed_df: pd.DataFrame,
+    occurrences: int,
+    elapsed_days: int | None = None,
+    scraping_days: int | None = None,
+) -> str:
+    """Display status for a prize tier.
+
+    'CLAIMED' / 'N of M remaining' = direct evidence from claimed_prizes.
+    'Available' = zero claims observed AND our observation window covers the
+        prize's full carousel-retention lifetime.
+    'Unknown' = zero claims observed BUT the game launched before our scraping
+        started AND retention isn't long enough to bridge the gap, so the prize
+        may have been won before we could see it.
+    """
+    count = 0 if claimed_df.empty else len(claimed_df[claimed_df["prize_amount"] == prize_amount])
     if count >= occurrences:
         return "CLAIMED"
-    return f"{occurrences - count} of {occurrences} remaining"
+    if count > 0:
+        return f"{occurrences - count} of {occurrences} remaining"
+
+    # Zero observed claims — is our observation window deep enough to trust that?
+    if elapsed_days is not None and scraping_days is not None:
+        ret = retention_days(prize_amount)
+        # Any claim from an elapsed window smaller than retention would still be
+        # visible in the carousel right now, so Available is safe regardless of
+        # when we started scraping.
+        if elapsed_days > ret and scraping_days + ret < elapsed_days:
+            return "Unknown"
+    return "Available"
+
+
+def observation_window(row: pd.Series) -> tuple[int | None, int | None]:
+    """(elapsed_days, scraping_days) for a snapshot row, or (None, None) if missing."""
+    today = datetime.now(timezone.utc)
+    gs = pd.to_datetime(row.get("game_start"), utc=True, errors="coerce")
+    fs = pd.to_datetime(row.get("scrape_first_seen"), utc=True, errors="coerce")
+    if pd.isna(gs):
+        return None, None
+    elapsed = (today - gs.to_pydatetime()).days
+    scraping = (today - fs.to_pydatetime()).days if not pd.isna(fs) else 0
+    return max(elapsed, 0), max(scraping, 0)
 
 
 def days_ago(dt) -> str:
@@ -285,18 +335,32 @@ def _render_pick_card(row: pd.Series) -> None:
 
             sell = row.get("sell_through")
             se = row.get("sell_through_se")
+            low_conf = bool(row.get("low_confidence"))
             if sell is not None:
-                pct = sell * 100
-                se_pct = (se * 100) if se else 0
-                st.progress(min(1.0, sell), text=f"{pct:.1f}% sold ± {se_pct:.1f}%")
+                if low_conf:
+                    label = f"{format_sell_through(sell, True)} sold"
+                else:
+                    se_pct = (se * 100) if se else 0
+                    label = f"{format_sell_through(sell, False)} sold ± {se_pct:.1f}%"
+                st.progress(min(1.0, sell), text=label)
 
             # top 2 prize status
             if not tiers_df.empty:
+                elapsed, scraping = observation_window(row)
                 top_tiers = tiers_df.nlargest(2, "prize_amount")
                 for _, tier in top_tiers.iterrows():
-                    status = prize_status(tier["prize_amount"], claimed_df, int(tier["occurrences"]))
-                    icon = "✦" if status == "Available" else ("✗" if status == "CLAIMED" else "◑")
-                    color = "green" if status == "Available" else ("red" if status == "CLAIMED" else "orange")
+                    status = prize_status(
+                        tier["prize_amount"], claimed_df, int(tier["occurrences"]),
+                        elapsed_days=elapsed, scraping_days=scraping,
+                    )
+                    if status == "Available":
+                        icon, color = "✦", "green"
+                    elif status == "CLAIMED":
+                        icon, color = "✗", "red"
+                    elif status == "Unknown":
+                        icon, color = "?", "gray"
+                    else:
+                        icon, color = "◑", "orange"
                     label = f"**€{tier['prize_amount']:,.0f}** — :{color}[{status}]"
                     st.markdown(f"{icon} {label}")
 
@@ -317,9 +381,11 @@ def page_all_games(df: pd.DataFrame) -> None:
     display["Confidence"] = display.apply(confidence_badge, axis=1)
     display["EV adj"] = display["ev_adj"].map(lambda x: f"{x:.3f}" if x is not None else "—")
     display["EV base"] = display["ev_base"].map(lambda x: f"{x:.3f}" if x is not None else "—")
-    display["Sold %"] = display["sell_through"].map(lambda x: f"{x*100:.1f}%" if x is not None else "—")
-    display["Started"] = pd.to_datetime(display["game_start"], utc=True, errors="coerce").dt.strftime("%d %b %Y")
-    display["Started"] = display["Started"].fillna("—")
+    display["Sold %"] = display.apply(
+        lambda r: format_sell_through(r["sell_through"], bool(r.get("low_confidence"))),
+        axis=1,
+    )
+    display["Started"] = pd.to_datetime(display["game_start"], utc=True, errors="coerce").dt.date
 
     table_height = 38 + 35 * len(display)
     event = st.dataframe(
@@ -331,6 +397,9 @@ def page_all_games(df: pd.DataFrame) -> None:
         height=table_height,
         on_select="rerun",
         selection_mode="single-row",
+        column_config={
+            "Started": st.column_config.DateColumn("Started", format="DD MMM YYYY"),
+        },
     )
 
     selected_rows = event.selection.rows
@@ -366,13 +435,18 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
     c1.metric("EV adj (per €1)", f"{snap_row['ev_adj']:.3f}" if snap_row["ev_adj"] is not None else "—")
     c2.metric("EV base (per €1)", f"{snap_row['ev_base']:.3f}" if snap_row["ev_base"] is not None else "—")
     sell = snap_row.get("sell_through")
-    c3.metric("Sell-through", f"{sell*100:.1f}%" if sell is not None else "—")
+    low_conf = bool(snap_row.get("low_confidence"))
+    c3.metric("Sell-through", format_sell_through(sell, low_conf))
     c4.markdown(f"**Confidence:** {confidence_badge(snap_row)}")
 
     # sell-through progress bar
     if sell is not None:
-        se = snap_row.get("sell_through_se") or 0
-        st.progress(min(1.0, sell), text=f"Prize pool {sell*100:.1f}% claimed ± {se*100:.1f}%")
+        if low_conf:
+            text = f"Prize pool {format_sell_through(sell, True)} claimed"
+        else:
+            se = snap_row.get("sell_through_se") or 0
+            text = f"Prize pool {format_sell_through(sell, False)} claimed ± {se*100:.1f}%"
+        st.progress(min(1.0, sell), text=text)
 
     st.divider()
 
@@ -386,11 +460,12 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
 
     if not tiers_df.empty:
         total = total or sum(int(t["occurrences"]) for _, t in tiers_df.iterrows())
+        elapsed, scraping = observation_window(snap_row)
         rows_out = []
         for _, tier in tiers_df.iterrows():
             amt = float(tier["prize_amount"])
             occ = int(tier["occurrences"])
-            status = prize_status(amt, claimed_df, occ)
+            status = prize_status(amt, claimed_df, occ, elapsed_days=elapsed, scraping_days=scraping)
             claimed_count = len(claimed_df[claimed_df["prize_amount"] == amt]) if not claimed_df.empty else 0
             odds = f"1 in {total // occ:,}" if occ > 0 else "—"
             rows_out.append({
@@ -407,6 +482,8 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
                 return "color: red; text-decoration: line-through"
             if val == "Available":
                 return "color: green"
+            if val == "Unknown":
+                return "color: gray"
             return "color: orange"
 
         st.dataframe(
@@ -423,9 +500,9 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
     if not hist.empty:
         price_hist = hist[hist["price"] == prices[selected_idx]]
         if not price_hist.empty:
-            chart_data = price_hist.set_index("scraped_at")[["ev_base", "ev_adj"]]
+            chart_data = price_hist.set_index("as_of")[["ev_base", "ev_adj"]]
             st.line_chart(chart_data, color=["#888888", "#1f77b4"])
-            st.caption("Grey = baseline EV · Blue = adjusted EV")
+            st.caption("Grey = baseline EV · Blue = adjusted EV (as of last claimed scrape)")
 
     st.divider()
 

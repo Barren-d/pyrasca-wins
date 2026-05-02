@@ -31,17 +31,17 @@ def compute_adj_ev(
     Returns a dict of fields to UPDATE on game_snapshots.
     """
     if not prize_tiers or not game_start:
-        return _fallback(snapshot_id, prize_tiers, price, None, empirical_retention)
+        return _fallback(snapshot_id, prize_tiers, price, None, empirical_retention, total_scenarios)
 
     elapsed_days = (today - game_start).days
     scraping_days = (today - scrape_start).days if scrape_start else 0
 
     if elapsed_days <= 0:
-        return _fallback(snapshot_id, prize_tiers, price, None, empirical_retention)
+        return _fallback(snapshot_id, prize_tiers, price, None, empirical_retention, total_scenarios)
 
     total_scenarios = total_scenarios or sum(t["occurrences"] for t in prize_tiers)
     if total_scenarios == 0:
-        return _fallback(snapshot_id, prize_tiers, price, None, empirical_retention)
+        return _fallback(snapshot_id, prize_tiers, price, None, empirical_retention, total_scenarios)
 
     calibrated = is_calibrated(empirical_retention)
 
@@ -83,7 +83,7 @@ def compute_adj_ev(
     # Fallback: sparse observations
     if sum_c < MIN_CLAIMS_FOR_RATE or scraping_days < MIN_SCRAPING_DAYS or sum_w_weff == 0:
         p_hat = min(1.0, elapsed_days / AGE_PRIOR_MEDIAN_DAYS)
-        return _fallback(snapshot_id, prize_tiers, price, p_hat, empirical_retention)
+        return _fallback(snapshot_id, prize_tiers, price, p_hat, empirical_retention, total_scenarios)
 
     # MLE sell-through
     p_hat = min(1.0, (sum_c * elapsed_days) / sum_w_weff)
@@ -101,7 +101,7 @@ def compute_adj_ev(
         }
 
     if p_hat > HIGH_SELL_THROUGH_THRESHOLD:
-        return _fallback(snapshot_id, prize_tiers, price, p_hat, empirical_retention)
+        return _fallback(snapshot_id, prize_tiers, price, p_hat, empirical_retention, total_scenarios)
 
     # Clamp to avoid division blowup
     p_denom = min(p_hat, 0.9999)
@@ -142,9 +142,13 @@ def _fallback(
     price: float,
     p_hat: float | None,
     empirical_retention: dict | None,
+    total_scenarios: int | None = None,
 ) -> dict[str, Any]:
     from .ev import baseline_ev
-    total = sum(t["occurrences"] for t in prize_tiers) if prize_tiers else 0
+    # Prefer the authoritative total_scenarios from the snapshot. Only sum prize-tier
+    # occurrences as a last resort — that count omits losing tickets and yields a
+    # wildly inflated EV. (See the per-€1 = +1.6 vs −0.4 incident in early dev.)
+    total = total_scenarios or (sum(t["occurrences"] for t in prize_tiers) if prize_tiers else 0)
     base_ev, base_ev_per_euro = (None, None)
     if prize_tiers and total > 0:
         base_ev, base_ev_per_euro = baseline_ev(prize_tiers, total, price)

@@ -48,28 +48,43 @@ def upsert_claimed_prize(claim: dict[str, Any]) -> None:
 
 
 def update_snapshot_ev(snapshot_id: str, fields: dict[str, Any]) -> None:
-    get_client().table("game_snapshots").update(fields).eq("snapshot_id", snapshot_id).execute()
+    payload = {**fields, "ev_recomputed_at": _now()}
+    get_client().table("game_snapshots").update(payload).eq("snapshot_id", snapshot_id).execute()
 
 
 def nullify_ambiguous_prize_tiers(game_id: str) -> None:
     """Set prize_tier_id = NULL on claimed_prizes where prize_amount appears in
-    more than one price tier for this game (condition (b) of observable tier set O)."""
+    more than one price tier for this game (condition (b) of observable tier set O).
+
+    Two-step query — embedded-join filters on supabase-py are unreliable.
+    """
     client = get_client()
 
-    # find ambiguous amounts: same prize_amount in > 1 price tier for this game
-    res = (
-        client.table("prize_tiers")
-        .select("prize_amount, game_snapshots(game_id, price)")
-        .eq("game_snapshots.game_id", game_id)
+    snap_rows = (
+        client.table("game_snapshots")
+        .select("snapshot_id, price")
+        .eq("game_id", game_id)
         .execute()
+        .data
+    )
+    if not snap_rows:
+        return
+    snap_to_price: dict[str, float] = {r["snapshot_id"]: float(r["price"]) for r in snap_rows}
+
+    tier_rows = (
+        client.table("prize_tiers")
+        .select("prize_amount, snapshot_id")
+        .in_("snapshot_id", list(snap_to_price.keys()))
+        .execute()
+        .data
     )
 
     from collections import defaultdict
     price_by_amount: dict[float, set] = defaultdict(set)
-    for row in res.data:
-        snap = row.get("game_snapshots") or {}
-        if snap.get("game_id") == game_id:
-            price_by_amount[row["prize_amount"]].add(snap.get("price"))
+    for row in tier_rows:
+        price = snap_to_price.get(row["snapshot_id"])
+        if price is not None:
+            price_by_amount[float(row["prize_amount"])].add(price)
 
     ambiguous = [amt for amt, prices in price_by_amount.items() if len(prices) > 1]
     for amt in ambiguous:

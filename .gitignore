@@ -26,6 +26,7 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+.ruff_cache/
 
 # Jupyter
 .ipynb_checkpoints/

@@ -42,6 +42,7 @@ CREATE TABLE game_snapshots (
     sell_through_se              NUMERIC,
     low_confidence               BOOLEAN DEFAULT FALSE,
     retention_calibrated         BOOLEAN DEFAULT FALSE,
+    ev_recomputed_at             TIMESTAMPTZ,    -- bumped by claimed scrape; chart x-axis source
     html_path                    TEXT
 );
 
@@ -76,3 +77,45 @@ CREATE TABLE claimed_prizes (
 CREATE INDEX idx_game_snapshots_game_scraped ON game_snapshots (game_id, scraped_at DESC);
 CREATE INDEX idx_claimed_prizes_game_claimed ON claimed_prizes (game_id, claimed_at DESC);
 CREATE INDEX idx_claimed_prizes_tier ON claimed_prizes (prize_tier_id) WHERE prize_tier_id IS NOT NULL;
+
+-- ─── Trigger: preserve first_seen / first_run_id and bump last_seen on conflict ─────
+--
+-- The carousel scrape upserts every row it sees. On INSERT the payload values are kept.
+-- On UPDATE we want first_seen and first_run_id to stay frozen (they record when WE
+-- first observed the claim) while last_seen tracks when we last saw it in the carousel.
+-- last_seen − claimed_at is the empirical retention measurement.
+
+CREATE OR REPLACE FUNCTION claimed_prizes_preserve_first_seen()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.first_seen   = OLD.first_seen;
+    NEW.first_run_id = OLD.first_run_id;
+    NEW.last_seen    = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS claimed_prizes_first_seen_preserve ON claimed_prizes;
+CREATE TRIGGER claimed_prizes_first_seen_preserve
+BEFORE UPDATE ON claimed_prizes
+FOR EACH ROW EXECUTE FUNCTION claimed_prizes_preserve_first_seen();
+
+-- ─── retention_curve(): empirical retention per prize_amount bucket ─────────────────
+--
+-- 90th-percentile of (last_seen − claimed_at), excluding entries still visible in the
+-- carousel (last_seen ≥ NOW() − 1h means the prize is still on display, so we don't
+-- yet know its true exit time). Buckets with < 50 supporting claims are excluded.
+--
+-- Called by src/analysis/retention.py via supabase rpc().
+
+CREATE OR REPLACE FUNCTION retention_curve()
+RETURNS TABLE(prize_amount NUMERIC, retention_days FLOAT) AS $$
+    SELECT prize_amount,
+           EXTRACT(EPOCH FROM percentile_disc(0.9) WITHIN GROUP (
+               ORDER BY last_seen - claimed_at
+           )) / 86400.0 AS retention_days
+    FROM claimed_prizes
+    WHERE last_seen < NOW() - INTERVAL '1 hour'
+    GROUP BY prize_amount
+    HAVING COUNT(*) >= 50;
+$$ LANGUAGE SQL STABLE;

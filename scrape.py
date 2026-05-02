@@ -109,6 +109,8 @@ def _run_claimed_inner(run_id: str, empirical_retention) -> None:
     print(f"  Fetched {len(claims)} carousel entries")
 
     claims = claimed_scraper.match_prize_tier_ids(claims)
+    matched = sum(1 for c in claims if c.get("prize_tier_id"))
+    print(f"  Matched to prize tier: {matched}/{len(claims)} ({100*matched/len(claims):.0f}%)" if claims else "  No claims")
 
     count_before = client.table("claimed_prizes").select("claim_id", count="exact").execute().count or 0
 
@@ -116,6 +118,7 @@ def _run_claimed_inner(run_id: str, empirical_retention) -> None:
     for claim in claims:
         try:
             db.upsert_claimed_prize({
+                "first_run_id": run_id,
                 "last_run_id": run_id,
                 "game_id": claim.get("game_id"),
                 "game_name": claim["game_name"],
