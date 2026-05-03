@@ -1,4 +1,4 @@
-name: Full scrape (daily)
+name: Full scrape (weekly)
 
 on:
   schedule:
