@@ -282,6 +282,68 @@ def maybe_show_bootstrap_banner(df: pd.DataFrame) -> None:
         )
 
 
+# ── Page: Home ────────────────────────────────────────────────────────────────
+
+def page_home(df: pd.DataFrame) -> None:
+    st.title("pyRasca")
+    st.caption("Depletion-adjusted expected value for ONCE scratch cards.")
+    st.divider()
+
+    # ── Key stats ──
+    scrape_info = load_last_scrape()
+    claimed_info = scrape_info.get("claimed")
+    full_info = scrape_info.get("full")
+
+    last_scrape_str = "—"
+    if claimed_info and claimed_info.get("completed_at"):
+        last_scrape_str = days_ago(pd.to_datetime(claimed_info["completed_at"], utc=True))
+    elif full_info and full_info.get("completed_at"):
+        last_scrape_str = days_ago(pd.to_datetime(full_info["completed_at"], utc=True))
+
+    n_games = df["game_id"].nunique() if not df.empty else 0
+    best_ev = df["ev_adj"].max() if not df.empty else None
+    best_ev_str = f"{best_ev:.3f}" if best_ev is not None and not pd.isna(best_ev) else "—"
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Games tracked", n_games)
+    c2.metric("Last carousel scrape", last_scrape_str)
+    c3.metric("Best EV today", best_ev_str)
+
+    st.divider()
+
+    # ── Top picks mini-table ──
+    if not df.empty:
+        st.subheader("Top picks right now")
+        top = (
+            df.dropna(subset=["ev_adj"])
+            .sort_values("ev_adj", ascending=False)
+            .head(5)
+        )
+        for _, row in top.iterrows():
+            col_name, col_price, col_ev, col_sold = st.columns([4, 1, 1, 2])
+            col_name.write(f"**{row['name']}**")
+            col_price.write(f"€{row['price']:.2f}")
+            ev_val = row["ev_adj"]
+            col_ev.write(f"`{ev_val:.3f}`")
+            sell = row.get("sell_through")
+            low_conf = bool(row.get("low_confidence"))
+            col_sold.write(format_sell_through(sell, low_conf))
+
+    st.divider()
+
+    # ── Navigation shortcuts ──
+    b1, b2, b3 = st.columns(3)
+    if b1.button("🏆 Today's Picks", use_container_width=True):
+        st.session_state["nav_page"] = "Today's Picks"
+        st.rerun()
+    if b2.button("📋 All Games", use_container_width=True):
+        st.session_state["nav_page"] = "All Games"
+        st.rerun()
+    if b3.button("🎰 Recent Wins", use_container_width=True):
+        st.session_state["nav_page"] = "Recent Wins"
+        st.rerun()
+
+
 # ── Page: Today's Picks ───────────────────────────────────────────────────────
 
 def page_picks(df: pd.DataFrame) -> None:
@@ -553,6 +615,7 @@ def page_recent_wins(min_prize: int = 500, run_clicked: bool = False) -> None:
     if wins_df.empty:
         st.info("No wins matching this filter yet.")
     else:
+        wins_df = wins_df.sort_values("claimed_at", ascending=False)
         wins_df["When"] = wins_df["claimed_at"].apply(days_ago)
         wins_df["Prize"] = wins_df["prize_amount"].apply(
             lambda x: f"€{x:,.0f}" if x >= 1000 else f"€{x:,.2f}"
@@ -586,7 +649,7 @@ def main() -> None:
 
     df = load_latest_snapshots()
     selected_game_id: str | None = None
-    rw_min_prize: int = 50
+    rw_min_prize: int = 0
     run_clicked: bool = False
 
     maybe_show_bootstrap_banner(df)
@@ -595,7 +658,7 @@ def main() -> None:
         st.title("pyRasca")
         page = st.radio(
             "Navigate",
-            ["Today's Picks", "All Games", "Game Detail", "Recent Wins"],
+            ["Home", "Today's Picks", "All Games", "Game Detail", "Recent Wins"],
             label_visibility="collapsed",
             key="nav_page",
         )
@@ -614,13 +677,15 @@ def main() -> None:
             rw_min_prize = st.select_slider(
                 "Min prize (€)",
                 options=[0, 5, 10, 25, 50, 100, 250, 500, 1000, 5000],
-                value=50,
+                value=0,
                 format_func=lambda x: "All" if x == 0 else f"€{x:,}+",
                 key="rw_min_prize",
             )
             run_clicked = st.button("↻ Run Scraper", use_container_width=True)
 
-    if page == "Today's Picks":
+    if page == "Home":
+        page_home(df)
+    elif page == "Today's Picks":
         page_picks(df)
     elif page == "All Games":
         page_all_games(df)
