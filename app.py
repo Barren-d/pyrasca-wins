@@ -620,25 +620,6 @@ def main() -> None:
             )
             run_clicked = st.button("↻ Run Scraper", use_container_width=True)
 
-        st.divider()
-        with st.expander("🔍 Debug", expanded=False):
-            import os
-            st.write("URL set:", bool(os.environ.get("SUPABASE_URL")))
-            key = os.environ.get("SUPABASE_KEY", "")
-            st.write("Key tail:", key[-8:] if key else "none")
-
-            scrape_info = load_last_scrape()
-            for run_type, info in scrape_info.items():
-                if info:
-                    completed = info.get("completed_at", "")[:16] if info.get("completed_at") else "—"
-                    st.caption(f"**{run_type}**: {info['status']} · {completed}")
-                else:
-                    st.caption(f"**{run_type}**: no runs yet")
-
-            if st.button("Clear cache"):
-                st.cache_data.clear()
-                st.rerun()
-
     if page == "Today's Picks":
         page_picks(df)
     elif page == "All Games":
@@ -651,6 +632,26 @@ def main() -> None:
             st.info("Select a game from the sidebar.")
     elif page == "Recent Wins":
         page_recent_wins(rw_min_prize, run_clicked)
+
+    with st.sidebar:
+        st.divider()
+        with st.expander("🔍 Debug", expanded=False):
+            import os
+            key = os.environ.get("SUPABASE_KEY", "")
+            st.caption(f"**URL set:** {bool(os.environ.get('SUPABASE_URL'))}")
+            st.caption(f"**Key tail:** {key[-8:] if key else 'none'}")
+
+            scrape_info = load_last_scrape()
+            for run_type, info in scrape_info.items():
+                if info:
+                    completed = info.get("completed_at", "")[:16] if info.get("completed_at") else "—"
+                    st.caption(f"**{run_type}**: {info['status']} · {completed}")
+                else:
+                    st.caption(f"**{run_type}**: no runs yet")
+
+            if st.button("Clear cache"):
+                st.cache_data.clear()
+                st.rerun()
 
 
 if __name__ == "__main__":
