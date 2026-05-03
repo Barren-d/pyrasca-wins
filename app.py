@@ -573,11 +573,17 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
     if not claimed_df.empty:
         top_amounts = set(tiers_df.nlargest(2, "prize_amount")["prize_amount"].tolist()) if not tiers_df.empty else set()
         log = claimed_df[["prize_amount", "winner", "claimed_at"]].copy()
-        log["Days ago"] = log["claimed_at"].apply(days_ago)
         log["Prize"] = log["prize_amount"].apply(lambda x: f"€{x:,.2f}")
         log["Notable"] = log["prize_amount"].isin(top_amounts)
         st.dataframe(
-            log[["Prize", "winner", "Days ago"]].rename(columns={"winner": "Winner"}),
+            log[["Prize", "winner", "claimed_at"]].rename(
+                columns={"winner": "Winner", "claimed_at": "Date"}
+            ),
+            column_config={
+                "Date": st.column_config.DatetimeColumn(
+                    "Date", format="D MMM YYYY, HH:mm", timezone="UTC"
+                ),
+            },
             use_container_width=True,
             hide_index=True,
         )
