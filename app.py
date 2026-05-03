@@ -135,7 +135,7 @@ def load_claimed_for_game(game_id: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=300)
-def load_recent_wins(min_prize: float = 500.0, limit: int = 100) -> pd.DataFrame:
+def load_recent_wins(min_prize: float = 500.0, limit: int = 2000) -> pd.DataFrame:
     client = get_client()
     rows = (
         client.table("claimed_prizes")
