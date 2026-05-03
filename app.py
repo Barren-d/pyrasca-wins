@@ -589,18 +589,6 @@ def main() -> None:
     rw_min_prize: int = 50
     run_clicked: bool = False
 
-    with st.sidebar:
-        with st.expander("🔍 Debug", expanded=False):
-            import os
-            key = os.environ.get("SUPABASE_KEY", "")
-            st.write("SUPABASE_URL set:", bool(os.environ.get("SUPABASE_URL")))
-            st.write("Key role:", "service_role" if "service_role" in key else ("anon" if "anon" in key else "unknown"))
-            st.write("Key tail:", key[-8:] if key else "none")
-            st.write("df shape:", df.shape)
-            if st.button("Force reload"):
-                st.cache_data.clear()
-                st.rerun()
-
     maybe_show_bootstrap_banner(df)
 
     with st.sidebar:
@@ -632,9 +620,13 @@ def main() -> None:
             )
             run_clicked = st.button("↻ Run Scraper", use_container_width=True)
 
-        # data health footer
         st.divider()
-        with st.expander("Data health"):
+        with st.expander("🔍 Debug", expanded=False):
+            import os
+            st.write("URL set:", bool(os.environ.get("SUPABASE_URL")))
+            key = os.environ.get("SUPABASE_KEY", "")
+            st.write("Key tail:", key[-8:] if key else "none")
+
             scrape_info = load_last_scrape()
             for run_type, info in scrape_info.items():
                 if info:
@@ -642,6 +634,10 @@ def main() -> None:
                     st.caption(f"**{run_type}**: {info['status']} · {completed}")
                 else:
                     st.caption(f"**{run_type}**: no runs yet")
+
+            if st.button("Clear cache"):
+                st.cache_data.clear()
+                st.rerun()
 
     if page == "Today's Picks":
         page_picks(df)
