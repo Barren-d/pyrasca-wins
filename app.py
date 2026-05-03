@@ -618,12 +618,11 @@ def page_recent_wins(min_prize: int = 500, run_clicked: bool = False) -> None:
         wins_df = wins_df.sort_values("claimed_at", ascending=False)
         prize_filter_str = f"€{min_prize:,}+" if min_prize > 0 else "all prizes"
         st.caption(f"{len(wins_df)} wins · {prize_filter_str}")
-        wins_df["When"] = wins_df["claimed_at"].apply(days_ago)
         wins_df["Prize"] = wins_df["prize_amount"].apply(
             lambda x: f"€{x:,.0f}" if x >= 1000 else f"€{x:,.2f}"
         )
         st.dataframe(
-            wins_df[["game_name", "Prize", "winner", "claimed_at", "When"]].rename(
+            wins_df[["game_name", "Prize", "winner", "claimed_at"]].rename(
                 columns={"game_name": "Game", "winner": "Winner", "claimed_at": "Date"}
             ),
             column_config={
