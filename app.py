@@ -306,8 +306,8 @@ def page_home(df: pd.DataFrame) -> None:
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Games tracked", n_games)
-    c2.metric("Last carousel scrape", last_scrape_str)
-    c3.metric("Best EV today", best_ev_str)
+    c2.metric("Best EV today", best_ev_str)
+    c3.metric("Last update", last_scrape_str)
 
     st.divider()
 
@@ -616,6 +616,8 @@ def page_recent_wins(min_prize: int = 500, run_clicked: bool = False) -> None:
         st.info("No wins matching this filter yet.")
     else:
         wins_df = wins_df.sort_values("claimed_at", ascending=False)
+        prize_filter_str = f"€{min_prize:,}+" if min_prize > 0 else "all prizes"
+        st.caption(f"{len(wins_df)} wins · {prize_filter_str}")
         wins_df["When"] = wins_df["claimed_at"].apply(days_ago)
         wins_df["Prize"] = wins_df["prize_amount"].apply(
             lambda x: f"€{x:,.0f}" if x >= 1000 else f"€{x:,.2f}"
