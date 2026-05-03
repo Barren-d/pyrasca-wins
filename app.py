@@ -438,7 +438,16 @@ def page_all_games(df: pd.DataFrame) -> None:
         st.info("No data yet.")
         return
 
-    display = df.copy().dropna(subset=["ev_adj"]).sort_values("ev_adj", ascending=False).reset_index(drop=True)
+    with st.sidebar:
+        st.header("Filter by price")
+        available_prices = sorted(df["price"].dropna().unique().tolist(), reverse=True)
+        price_filter = st.selectbox("Ticket price (€)", ["All"] + [str(p) for p in available_prices], key="ag_price_filter")
+
+    filtered = df.copy()
+    if price_filter != "All":
+        filtered = filtered[filtered["price"] == float(price_filter)]
+
+    display = filtered.dropna(subset=["ev_adj"]).sort_values("ev_adj", ascending=False).reset_index(drop=True)
 
     display["Confidence"] = display.apply(confidence_badge, axis=1)
     display["EV adj"] = display["ev_adj"].map(lambda x: f"{x:.3f}" if x is not None else "—")
