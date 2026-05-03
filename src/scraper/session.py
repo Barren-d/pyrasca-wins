@@ -3,19 +3,16 @@ import random
 import time
 from pathlib import Path
 
-import requests
+from curl_cffi import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
 DEV_CACHE = os.getenv("DEV_CACHE", "false").lower() == "true"
 
-_USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
-]
+# Rotate Chrome impersonation targets so each request has a slightly different
+# TLS fingerprint. curl_cffi sets the matching User-Agent automatically.
+_IMPERSONATE_TARGETS = ["chrome120", "chrome124", "chrome131", "chrome136"]
 
 _RETRY_DELAYS = [15, 45, 120]  # seconds between retry attempts
 
@@ -25,18 +22,10 @@ class BlockedError(RuntimeError):
 
 
 def _new_session() -> requests.Session:
-    s = requests.Session()
+    s = requests.Session(impersonate=random.choice(_IMPERSONATE_TARGETS))
     s.headers.update({
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
         "Referer": "https://www.juegosonce.es/",
-        "DNT": "1",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "same-origin",
-        "Sec-Fetch-User": "?1",
     })
     return s
 
@@ -64,9 +53,8 @@ def get(url: str, cache: bool = True) -> str:
         if delay:
             print(f"  [fetch] retrying in {delay}s (attempt {attempt + 1})")
             time.sleep(delay)
-            _session = _new_session()  # fresh session + cookies on retry
+            _session = _new_session()  # fresh session, new impersonation target
 
-        _session.headers["User-Agent"] = random.choice(_USER_AGENTS)
         try:
             response = _session.get(
                 url, timeout=30,
