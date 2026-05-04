@@ -135,20 +135,28 @@ def load_claimed_for_game(game_id: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=300)
-def load_recent_wins(min_prize: float = 500.0, limit: int = 2000) -> pd.DataFrame:
+def load_recent_wins(min_prize: float = 500.0) -> pd.DataFrame:
     client = get_client()
-    rows = (
-        client.table("claimed_prizes")
-        .select("game_name, game_url, prize_amount, winner, claimed_at")
-        .gte("prize_amount", min_prize)
-        .order("claimed_at", desc=True)
-        .limit(limit)
-        .execute()
-        .data
-    )
-    if not rows:
+    page_size = 1000
+    all_rows: list = []
+    offset = 0
+    while True:
+        rows = (
+            client.table("claimed_prizes")
+            .select("game_name, game_url, prize_amount, winner, claimed_at")
+            .gte("prize_amount", min_prize)
+            .order("claimed_at", desc=True)
+            .range(offset, offset + page_size - 1)
+            .execute()
+            .data
+        )
+        all_rows.extend(rows)
+        if len(rows) < page_size:
+            break
+        offset += page_size
+    if not all_rows:
         return pd.DataFrame()
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(all_rows)
     df["claimed_at"] = pd.to_datetime(df["claimed_at"], utc=True)
     df["prize_amount"] = pd.to_numeric(df["prize_amount"], errors="coerce")
     return df
