@@ -1,12 +1,12 @@
-name: Claimed scrape (every 72 min)
+name: Claimed scrape (every 48 min)
 
 on:
   schedule:
-    - cron: '0 0,6,12,18 * * *'
-    - cron: '12 1,7,13,19 * * *'
-    - cron: '24 2,8,14,20 * * *'
-    - cron: '36 3,9,15,21 * * *'
-    - cron: '48 4,10,16,22 * * *'
+    - cron: '0 0,4,8,12,16,20 * * *'
+    - cron: '48 0,4,8,12,16,20 * * *'
+    - cron: '36 1,5,9,13,17,21 * * *'
+    - cron: '24 2,6,10,14,18,22 * * *'
+    - cron: '12 3,7,11,15,19,23 * * *'
   workflow_dispatch:
 
 jobs:
