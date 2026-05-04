@@ -7,7 +7,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, date as date_type
 
 from src.db.client import get_client
 from src.analysis.retention import retention_days
@@ -143,7 +143,7 @@ def load_recent_wins(min_prize: float = 500.0) -> pd.DataFrame:
     while True:
         rows = (
             client.table("claimed_prizes")
-            .select("game_name, game_url, prize_amount, winner, claimed_at")
+            .select("game_id, game_name, game_url, prize_amount, winner, claimed_at")
             .gte("prize_amount", min_prize)
             .order("claimed_at", desc=True)
             .range(offset, offset + page_size - 1)
@@ -613,7 +613,7 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
 _SCRAPE_CWD = os.path.dirname(os.path.abspath(__file__))
 
 
-def page_recent_wins(min_prize: int = 500, run_clicked: bool = False) -> None:
+def page_recent_wins(df: pd.DataFrame, min_prize: int = 0, run_clicked: bool = False, winner_search: str = "", date_range=None, price_filter: str = "All") -> None:
     st.title("Recent Wins Feed")
 
     if run_clicked:
@@ -635,10 +635,26 @@ def page_recent_wins(min_prize: int = 500, run_clicked: bool = False) -> None:
 
     wins_df = load_recent_wins(min_prize=float(min_prize))
 
+    if not wins_df.empty:
+        wins_df = wins_df.sort_values("claimed_at", ascending=False)
+
+        if price_filter != "All" and not df.empty:
+            matching_ids = df[df["price"] == float(price_filter)]["game_id"].unique()
+            wins_df = wins_df[wins_df["game_id"].isin(matching_ids)]
+
+        if winner_search:
+            wins_df = wins_df[wins_df["winner"].str.contains(winner_search, case=False, na=False)]
+
+        if date_range and len(date_range) == 2:
+            date_from, date_to = date_range
+            wins_df = wins_df[
+                (wins_df["claimed_at"].dt.date >= date_from) &
+                (wins_df["claimed_at"].dt.date <= date_to)
+            ]
+
     if wins_df.empty:
         st.info("No wins matching this filter yet.")
     else:
-        wins_df = wins_df.sort_values("claimed_at", ascending=False)
         prize_filter_str = f"€{min_prize:,}+" if min_prize > 0 else "all prizes"
         st.caption(f"{len(wins_df)} wins · {prize_filter_str}")
         wins_df["Prize"] = wins_df["prize_amount"].apply(
@@ -673,7 +689,10 @@ def main() -> None:
 
     df = load_latest_snapshots()
     selected_game_id: str | None = None
+    rw_price_filter: str = "All"
     rw_min_prize: int = 0
+    rw_winner_search: str = ""
+    rw_date_range = (date_type.today() - timedelta(days=30), date_type.today())
     run_clicked: bool = False
 
     maybe_show_bootstrap_banner(df)
@@ -698,12 +717,28 @@ def main() -> None:
 
         if page == "Recent Wins":
             st.divider()
+            available_prices = sorted(df["price"].dropna().unique().tolist(), reverse=True) if not df.empty else []
+            rw_price_filter = st.selectbox(
+                "Ticket price (€)",
+                ["All"] + [str(p) for p in available_prices],
+                key="rw_price_filter",
+            )
             rw_min_prize = st.select_slider(
                 "Min prize (€)",
                 options=[0, 5, 10, 25, 50, 100, 250, 500, 1000, 5000],
                 value=0,
                 format_func=lambda x: "All" if x == 0 else f"€{x:,}+",
                 key="rw_min_prize",
+            )
+            rw_winner_search = st.text_input(
+                "Search winner",
+                key="rw_winner_search",
+                placeholder="Winner initial…",
+            )
+            rw_date_range = st.date_input(
+                "Date range",
+                value=(date_type.today() - timedelta(days=30), date_type.today()),
+                key="rw_date_range",
             )
             run_clicked = st.button("↻ Run Scraper", use_container_width=True)
 
@@ -720,7 +755,7 @@ def main() -> None:
             st.title("Game Detail")
             st.info("Select a game from the sidebar.")
     elif page == "Recent Wins":
-        page_recent_wins(rw_min_prize, run_clicked)
+        page_recent_wins(df, rw_min_prize, run_clicked, rw_winner_search, rw_date_range, rw_price_filter)
 
     with st.sidebar:
         st.divider()
