@@ -33,6 +33,7 @@ def run_full() -> None:
         empirical_retention = ret_module.load_empirical_retention()
 
         for game in games:
+            print(f"  game_id={game['game_id']} — {game['name']}")
             db.upsert_game({
                 "game_id": game["game_id"],
                 "name": game["name"],
@@ -94,15 +95,20 @@ def run_claimed() -> None:
 
     try:
         empirical_retention = ret_module.load_empirical_retention()
-        _run_claimed_inner(run_id, empirical_retention)
+        needs_full = _run_claimed_inner(run_id, empirical_retention)
         db.close_scrape_run(run_id, "success")
         print("Claimed scrape complete")
     except Exception:
         db.close_scrape_run(run_id, "failed")
         raise
 
+    if needs_full:
+        print("  Missing game(s) detected — escalating to full scrape")
+        run_full()
 
-def _run_claimed_inner(run_id: str, empirical_retention) -> None:
+
+def _run_claimed_inner(run_id: str, empirical_retention) -> bool:
+    """Returns True if any FK errors were detected (game missing from games table)."""
     client = get_client()
 
     claims = claimed_scraper.scrape_claimed()
@@ -115,6 +121,7 @@ def _run_claimed_inner(run_id: str, empirical_retention) -> None:
     count_before = client.table("claimed_prizes").select("claim_id", count="exact").execute().count or 0
 
     errors = 0
+    needs_full_scrape = False
     for claim in claims:
         try:
             db.upsert_claimed_prize({
@@ -130,13 +137,19 @@ def _run_claimed_inner(run_id: str, empirical_retention) -> None:
                 "prize_tier_id": claim.get("prize_tier_id"),
             })
         except Exception as e:
-            print(f"  WARN upsert failed: {claim.get('game_name')} {claim.get('prize_amount')} — {e}")
+            msg = str(e).lower()
+            if "foreign key" in msg or "23503" in msg:
+                print(f"  WARN FK error — '{claim.get('game_name')}' not in games table")
+                needs_full_scrape = True
+            else:
+                print(f"  WARN upsert failed: {claim.get('game_name')} {claim.get('prize_amount')} — {e}")
             errors += 1
 
     count_after = client.table("claimed_prizes").select("claim_id", count="exact").execute().count or 0
     print(f"  claimed_prizes: {count_before} → {count_after} (+{count_after - count_before} new, {errors} errors)")
 
     _recalculate_ev(empirical_retention)
+    return needs_full_scrape
 
 
 def _recalculate_ev(empirical_retention) -> None:
