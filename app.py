@@ -737,7 +737,7 @@ def main() -> None:
             )
             rw_date_range = st.date_input(
                 "Date range",
-                value=(date_type.today() - timedelta(days=30), date_type.today()),
+                value=(date_type.today() - timedelta(days=180), date_type.today()),
                 key="rw_date_range",
             )
             run_clicked = st.button("↻ Run Scraper", use_container_width=True)
