@@ -188,6 +188,26 @@ def _recalculate_ev(empirical_retention) -> None:
         game_first_seen = _parse_date(game_row.get("first_seen"))
         scrape_start = _floor_scrape_start(game_first_seen, claims_observation_start)
 
+        # matched claimed prizes for this game (paginated — games like
+        # Rasca Platinum exceed the Supabase 1000-row default)
+        claimed: list[dict] = []
+        cp_offset = 0
+        cp_page = 1000
+        while True:
+            page = (
+                client.table("claimed_prizes")
+                .select("prize_amount, prize_tier_id")
+                .eq("game_id", game_id)
+                .not_.is_("prize_tier_id", "null")
+                .range(cp_offset, cp_offset + cp_page - 1)
+                .execute()
+                .data
+            )
+            claimed.extend(page)
+            if len(page) < cp_page:
+                break
+            cp_offset += cp_page
+
         # latest snapshot per price
         snapshots = (
             client.table("game_snapshots")
@@ -210,16 +230,6 @@ def _recalculate_ev(empirical_retention) -> None:
                 client.table("prize_tiers")
                 .select("occurrences, prize_amount")
                 .eq("snapshot_id", snap["snapshot_id"])
-                .execute()
-                .data
-            )
-
-            # matched claimed prizes for this game
-            claimed = (
-                client.table("claimed_prizes")
-                .select("prize_amount, prize_tier_id")
-                .eq("game_id", game_id)
-                .not_.is_("prize_tier_id", "null")
                 .execute()
                 .data
             )
