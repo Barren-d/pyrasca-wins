@@ -78,6 +78,11 @@ def run_full() -> None:
             db.nullify_ambiguous_prize_tiers(game["game_id"])
             games_scraped += 1
 
+        # Retire games no longer on the listing (skips them in the EV recompute below)
+        deactivated = db.deactivate_missing_games([g["game_id"] for g in games])
+        if deactivated:
+            print(f"  Deactivated {len(deactivated)} retired game(s): {', '.join(deactivated)}")
+
         # claimed scrape + EV update
         _run_claimed_inner(run_id, empirical_retention)
 

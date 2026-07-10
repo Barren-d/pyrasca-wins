@@ -11,6 +11,30 @@ def upsert_game(game: dict[str, Any]) -> None:
     get_client().table("games").upsert(game, on_conflict="game_id").execute()
 
 
+def deactivate_missing_games(seen_game_ids: list[str]) -> list[str]:
+    """Mark active games absent from the current full-scrape listing as inactive.
+
+    A game that no longer appears on the listing page has been retired by ONCE.
+    Deactivation is non-destructive: a later full scrape that sees the game again
+    re-upserts it with active=True, so a transient parse miss self-heals within a
+    scrape cycle. Only call this after a successful listing scrape.
+
+    Returns the list of game_ids that were deactivated.
+    """
+    client = get_client()
+    active = client.table("games").select("game_id").eq("active", True).execute().data
+    seen = set(seen_game_ids)
+    to_deactivate = [g["game_id"] for g in active if g["game_id"] not in seen]
+    if to_deactivate:
+        (
+            client.table("games")
+            .update({"active": False})
+            .in_("game_id", to_deactivate)
+            .execute()
+        )
+    return to_deactivate
+
+
 def open_scrape_run(run_type: str) -> str:
     res = (
         get_client()
