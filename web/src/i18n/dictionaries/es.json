@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "picks": "Selección de hoy",
+    "all": "Todos los juegos",
+    "wins": "Premios recientes",
+    "archive": "Archivo",
+    "language": "Idioma"
+  },
+  "home": {
+    "updated": "Actualizado {time}",
+    "title": "Infórmate antes de rascar.",
+    "intro": "Compara todos los rascas a la venta: cuánto devuelve cada uno por cada 1 €, tu probabilidad de ganar, qué premios mayores ya se han cobrado y qué juegos están a punto de terminar.",
+    "gamesOnSale": "Juegos a la venta",
+    "winsTracked": "Premios registrados",
+    "bestReturn": "Mejor retorno hoy",
+    "perEuro": "por 1 €",
+    "topPicks": "Mejores opciones",
+    "ticketPrice": "Precio",
+    "anyPrice": "Todos",
+    "seeAll": "Ver los {n} boletos",
+    "avoid": "A evitar",
+    "avoidIntro": "3 céntimos peor que la mejor opción",
+    "avoidOnlyOne": "Solo hay un boleto de {price}, así que no hay con qué comparar.",
+    "avoidNothing": "Nada que evitar: todos los boletos de {price} están a menos de 3 céntimos por 1 € de la mejor opción.",
+    "anyPriceLong": "cualquier precio",
+    "outlier": "Atípico",
+    "typical": "Típico: {value}",
+    "bigClaimed": "Premios grandes cobrados",
+    "weaker": "Tabla de premios más débil",
+    "biggestWins": "Mayores premios de la semana",
+    "allWins": "Todos los premios recientes",
+    "winMeta": "Boleto de {price} · {date}",
+    "noWins": "Aún no hay premios de 5× el boleto o más esta semana."
+  },
+  "table": {
+    "rank": "#",
+    "game": "Juego",
+    "ticket": "Boleto",
+    "onPaper": "Sobre el papel",
+    "adjusted": "Ajustado, por 1 €",
+    "sold": "Vendido",
+    "why": "Motivo"
+  },
+  "chips": {
+    "topClaimed": "Premios mayores cobrados",
+    "ends": "Termina el {date}",
+    "lastDays": "Últimos días"
+  },
+  "footer": {
+    "disclaimer": "Estimaciones a partir de las tablas de premios públicas y los premios cobrados. Sin relación con ningún operador de lotería.",
+    "responsible": "Juega con responsabilidad. +18"
+  },
+  "errors": {
+    "noData": "No se han podido cargar los datos. Vuelve a intentarlo en unos minutos."
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "picks": "Today's picks",
+    "all": "All games",
+    "wins": "Recent wins",
+    "archive": "Archive",
+    "language": "Language"
+  },
+  "home": {
+    "updated": "Updated {time}",
+    "title": "Know what you're playing before you scratch.",
+    "intro": "Compare every scratch card on sale: what each one pays back per €1, your chance of winning, which top prizes have already been claimed and which games are about to end.",
+    "gamesOnSale": "Games on sale",
+    "winsTracked": "Wins tracked",
+    "bestReturn": "Best return today",
+    "perEuro": "per €1",
+    "topPicks": "Top picks",
+    "ticketPrice": "Ticket price",
+    "anyPrice": "Any",
+    "seeAll": "See all {n} tickets",
+    "avoid": "Avoid",
+    "avoidIntro": "3¢ worse than the best pick",
+    "avoidOnlyOne": "Only one ticket at {price}, so there is nothing to compare against.",
+    "avoidNothing": "Nothing to avoid: every ticket at {price} is within 3 cents per €1 of the best pick.",
+    "anyPriceLong": "any price",
+    "outlier": "Outlier",
+    "typical": "Typical: {value}",
+    "bigClaimed": "Big prizes claimed",
+    "weaker": "Weaker prize table",
+    "biggestWins": "Biggest wins this week",
+    "allWins": "All recent wins",
+    "winMeta": "{price} ticket · {date}",
+    "noWins": "No wins of 5× the ticket or more this week yet."
+  },
+  "table": {
+    "rank": "#",
+    "game": "Game",
+    "ticket": "Ticket",
+    "onPaper": "On paper",
+    "adjusted": "Adjusted, per €1",
+    "sold": "Sold so far",
+    "why": "Why"
+  },
+  "chips": {
+    "topClaimed": "Top prizes claimed",
+    "ends": "Ends {date}",
+    "lastDays": "Last days"
+  },
+  "footer": {
+    "disclaimer": "Estimates from public prize tables and claimed wins. Not affiliated with any lottery operator.",
+    "responsible": "Play responsibly. 18+"
+  },
+  "errors": {
+    "noData": "The data couldn't be loaded right now. Please try again in a few minutes."
+  }
+}

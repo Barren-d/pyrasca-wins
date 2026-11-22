@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "picks": "Selecció d'avui",
+    "all": "Tots els jocs",
+    "wins": "Premis recents",
+    "archive": "Arxiu",
+    "language": "Idioma"
+  },
+  "home": {
+    "updated": "Actualitzat {time}",
+    "title": "Informa't abans de gratar.",
+    "intro": "Compara tots els rasques a la venda: quant retorna cadascun per cada 1 €, la teva probabilitat de guanyar, quins premis grans ja s'han cobrat i quins jocs estan a punt d'acabar.",
+    "gamesOnSale": "Jocs a la venda",
+    "winsTracked": "Premis registrats",
+    "bestReturn": "Millor retorn avui",
+    "perEuro": "per 1 €",
+    "topPicks": "Millors opcions",
+    "ticketPrice": "Preu",
+    "anyPrice": "Tots",
+    "seeAll": "Mostra les {n} butlletes",
+    "avoid": "A evitar",
+    "avoidIntro": "3 cèntims pitjor que la millor opció",
+    "avoidOnlyOne": "Només hi ha una butlleta de {price}, així que no hi ha res per comparar.",
+    "avoidNothing": "Res a evitar: totes les butlletes de {price} són a menys de 3 cèntims per 1 € de la millor opció.",
+    "anyPriceLong": "qualsevol preu",
+    "outlier": "Atípic",
+    "typical": "Típic: {value}",
+    "bigClaimed": "Premis grans cobrats",
+    "weaker": "Taula de premis més fluixa",
+    "biggestWins": "Els premis més grans de la setmana",
+    "allWins": "Tots els premis recents",
+    "winMeta": "Butlleta de {price} · {date}",
+    "noWins": "Encara no hi ha premis de 5× la butlleta o més aquesta setmana."
+  },
+  "table": {
+    "rank": "#",
+    "game": "Joc",
+    "ticket": "Butlleta",
+    "onPaper": "Sobre el paper",
+    "adjusted": "Ajustat, per 1 €",
+    "sold": "Venut",
+    "why": "Motiu"
+  },
+  "chips": {
+    "topClaimed": "Premis grans cobrats",
+    "ends": "Acaba el {date}",
+    "lastDays": "Últims dies"
+  },
+  "footer": {
+    "disclaimer": "Estimacions a partir de les taules de premis públiques i els premis cobrats. Sense relació amb cap operador de loteria.",
+    "responsible": "Juga amb responsabilitat. +18"
+  },
+  "errors": {
+    "noData": "No s'han pogut carregar les dades. Torna-ho a provar d'aquí a uns minuts."
+  }
+}
