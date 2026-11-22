@@ -23,6 +23,9 @@ export function formatters(locale: Locale) {
   // Official dates are calendar days; claim times are stored as Spanish local time
   // in a UTC field, so both are formatted in UTC to show them as published.
   const dayMonth = new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", timeZone: "UTC" });
+  const date = new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const dec1 = new Intl.NumberFormat(tag, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const claimTime = new Intl.DateTimeFormat(tag, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
   const updated = new Intl.DateTimeFormat(tag, {
     day: "numeric",
     month: "short",
@@ -40,7 +43,12 @@ export function formatters(locale: Locale) {
     prize: (n: number) => (Number.isInteger(n) ? euro0 : euro2).format(n),
     int: (n: number) => int.format(n),
     pct: (share: number) => pct1.format(share),
+    /** Odds denominator: a 36.7% chance → "2.7" (as in "1 in 2.7") */
+    oneIn: (share: number) => dec1.format(1 / share),
     dayMonth: (iso: string) => dayMonth.format(new Date(iso)),
+    date: (iso: string) => date.format(new Date(iso)),
+    /** Claim time as published in the winners list: "21 Nov, 17:10" */
+    claimTime: (iso: string) => claimTime.format(new Date(iso)),
     updated: (iso: string) => updated.format(new Date(iso)),
   };
 }

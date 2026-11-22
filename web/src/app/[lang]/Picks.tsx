@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Ticket } from "@/lib/data";
 import { fill, formatters } from "@/lib/format";
+import { Chip, HeadRow, Table, Td, Th } from "@/components/Table";
 
 // Avoid lists only tickets at least 3 cents per €1 worse than the best pick, so
 // near-ties never show up there. An Avoid row 15 cents or more below the typical
@@ -40,7 +41,7 @@ export function Picks({ locale, tickets, dict }: Props) {
   const typical = median(list.map((t) => t.adjusted));
   const priceLabel = price === "all" ? dict.home.anyPriceLong : fmt.ticket(price);
 
-  const href = (t: Ticket) => `/${locale}/games/${t.gameId}?price=${t.price}`;
+  const href = (t: Ticket) => `/${locale}/games/${t.gameId}/${t.price}`;
   const endChip = (t: Ticket) =>
     t.saleEnd ? fill(dict.chips.ends, { date: fmt.dayMonth(t.saleEnd) }) : t.lastDays ? dict.chips.lastDays : null;
 
@@ -172,35 +173,4 @@ function median(values: number[]): number {
   const s = [...values].sort((a, b) => a - b);
   const mid = s.length / 2;
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[mid - 1] + s[mid]) / 2;
-}
-
-function Table({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-card">
-      <table className="w-full min-w-[720px] border-collapse text-[15px]">{children}</table>
-    </div>
-  );
-}
-
-function HeadRow({ children }: { children: React.ReactNode }) {
-  return <tr className="text-right text-[13px] text-muted">{children}</tr>;
-}
-
-function Th({ children, left, className = "" }: { children: React.ReactNode; left?: boolean; className?: string }) {
-  return (
-    <th className={`border-b border-line px-3 py-3.5 font-semibold ${left ? "text-left" : ""} ${className}`}>{children}</th>
-  );
-}
-
-function Td({ children, left, className = "" }: { children: React.ReactNode; left?: boolean; className?: string }) {
-  return <td className={`border-b border-line-soft px-3 py-3.5 ${left ? "text-left" : ""} ${className}`}>{children}</td>;
-}
-
-function Chip({ children, tone }: { children: React.ReactNode; tone: "warn" | "neutral" | "strong" }) {
-  const styles = {
-    warn: "bg-warn-soft text-warn font-semibold",
-    neutral: "bg-chip text-chip-ink font-semibold",
-    strong: "bg-warn text-white font-bold",
-  }[tone];
-  return <span className={`rounded-full px-2 py-[3px] text-xs whitespace-nowrap ${styles}`}>{children}</span>;
 }

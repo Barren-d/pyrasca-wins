@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
+import { NavTracker } from "@/components/BackLink";
 import { isLocale, locales } from "@/i18n/config";
 import "../globals.css";
 
@@ -21,7 +22,10 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   if (!isLocale(lang)) notFound();
   return (
     <html lang={lang} className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}>
-      <body className="min-h-screen font-sans">{children}</body>
+      <body className="min-h-screen font-sans">
+        <NavTracker />
+        {children}
+      </body>
     </html>
   );
 }
