@@ -235,3 +235,18 @@ LEFT JOIN game_product_links l ON l.game_id = i.game_id AND l.status <> 'rejecte
 LEFT JOIN products p           ON p.product_key = l.product_key
 LEFT JOIN notice_documents ds  ON ds.doc_id = p.start_source
 LEFT JOIN notice_documents de  ON de.doc_id = p.end_source;
+
+-- ─── Listing label history (migration 005, written only by enrich.py) ─────────────
+
+CREATE TABLE IF NOT EXISTS listing_label_history (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    game_id     TEXT NOT NULL REFERENCES games(game_id),
+    label       TEXT,                      -- NULL = no badge on the card
+    first_seen  TIMESTAMPTZ NOT NULL,      -- first run that saw this label
+    last_seen   TIMESTAMPTZ NOT NULL       -- latest run that still saw it
+);
+CREATE INDEX IF NOT EXISTS idx_label_history_game ON listing_label_history (game_id, first_seen DESC);
+
+ALTER TABLE listing_label_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read" ON listing_label_history;
+CREATE POLICY "public read" ON listing_label_history FOR SELECT TO anon, authenticated USING (true);

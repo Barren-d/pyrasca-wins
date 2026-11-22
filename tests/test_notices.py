@@ -7,6 +7,7 @@ from datetime import date
 
 from src.scraper.notices import (
     doc_label,
+    label_history_changes,
     link_game,
     parse_launch,
     parse_listing,
@@ -213,3 +214,20 @@ def test_doc_label():
         == "Acuerdo CEP.13/2026-3.2"
     assert doc_label("Verificación de los Acuerdos CEP.13/2026-3.1 …", "https://www.boe.es/x.pdf") \
         == "BOE, Acuerdo CEP.13/2026-3.1"
+
+
+def test_label_history_extends_unchanged_and_opens_changed():
+    current = {"EF0": "¡Novedad!", "EE4": "¡Últimos días!", "EN1": None, "EO5": "¡Nuevo!"}
+    open_periods = {
+        "EF0": {"id": 1, "label": "¡Nuevo!"},         # label changed → new period
+        "EE4": {"id": 2, "label": "¡Últimos días!"},  # unchanged → extend
+        "EN1": {"id": 3, "label": None},              # still no badge → extend
+    }                                                 # EO5 never seen → new period
+    extend, opened = label_history_changes(current, open_periods)
+    assert sorted(extend) == [2, 3]
+    assert opened == [{"game_id": "EF0", "label": "¡Novedad!"}, {"game_id": "EO5", "label": "¡Nuevo!"}]
+
+
+def test_label_history_records_badge_removed():
+    extend, opened = label_history_changes({"EF0": None}, {"EF0": {"id": 9, "label": "¡Novedad!"}})
+    assert extend == [] and opened == [{"game_id": "EF0", "label": None}]

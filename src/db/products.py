@@ -56,6 +56,33 @@ def save_page_info(game_id: str, product_name: str | None, product_key: str | No
     }, on_conflict="game_id").execute()
 
 
+def latest_label_periods() -> dict[str, dict[str, Any]]:
+    """Each game's most recent listing_label_history row."""
+    client = get_client()
+    rows, offset = [], 0
+    while True:
+        page = (client.table("listing_label_history").select("id, game_id, label, first_seen")
+                .order("first_seen", desc=True).range(offset, offset + 999).execute().data)
+        rows.extend(page)
+        if len(page) < 1000:
+            break
+        offset += 1000
+    latest: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        latest.setdefault(r["game_id"], r)
+    return latest
+
+
+def record_label_history(extend_ids: list[int], opened: list[dict[str, Any]]) -> None:
+    now, client = _now(), get_client()
+    for i in range(0, len(extend_ids), 200):
+        client.table("listing_label_history").update({"last_seen": now}).in_("id", extend_ids[i:i + 200]).execute()
+    if opened:
+        client.table("listing_label_history").insert(
+            [{**o, "first_seen": now, "last_seen": now} for o in opened]
+        ).execute()
+
+
 # ── notice_documents and products ───────────────────────────────────────────
 
 def known_documents() -> set[str]:

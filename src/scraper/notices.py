@@ -253,6 +253,27 @@ def parse_launch(text: str) -> list[dict[str, Any]]:
     return list(products.values())
 
 
+def label_history_changes(
+    current: dict[str, str | None], open_periods: dict[str, dict[str, Any]]
+) -> tuple[list[int], list[dict[str, Any]]]:
+    """Compare today's listing labels with each game's latest label period.
+
+    `current`: game_id → label seen now (None = no badge).
+    `open_periods`: game_id → that game's latest history row ({"id", "label"}).
+    Returns (ids of periods that continue, new periods to open as {"game_id", "label"}).
+    A game seen for the first time opens a period even when it has no badge, so the
+    history also shows when a badge appeared or went away.
+    """
+    extend, opened = [], []
+    for game_id, label in current.items():
+        latest = open_periods.get(game_id)
+        if latest is not None and latest.get("label") == label:
+            extend.append(latest["id"])
+        else:
+            opened.append({"game_id": game_id, "label": label})
+    return extend, opened
+
+
 LAUNCH_TOLERANCE_DAYS = 3
 LAST_DAYS_WINDOW = 7       # art. 19.6: the end date is shown at least a week ahead
 

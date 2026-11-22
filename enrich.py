@@ -45,7 +45,16 @@ def _labels_and_pages(today: date, _listing) -> list[dict]:
     skipped = [g["game_id"] for g in listing if g["game_id"] not in known]
     listing = [g for g in listing if g["game_id"] in known]
     print(f"Listing: {len(listing)} games" + (f" ({len(skipped)} not scraped yet: {', '.join(skipped)})" if skipped else ""))
-    db.save_listing_labels({g["game_id"]: g["listing_label"] for g in listing})
+    labels = {g["game_id"]: g["listing_label"] for g in listing}
+    db.save_listing_labels(labels)
+    try:
+        extend, opened = notices.label_history_changes(labels, db.latest_label_periods())
+        db.record_label_history(extend, opened)
+        changed = [f"{o['game_id']}→{o['label'] or 'none'}" for o in opened]
+        print(f"Label history: {len(extend)} unchanged, {len(opened)} new period(s)"
+              + (f": {', '.join(changed)}" if 0 < len(changed) <= 10 else ""))
+    except Exception as exc:  # e.g. migration 005 not run yet; never blocks the rest
+        print(f"  WARN label history not recorded: {exc}")
 
     info = db.load_game_info()
     stale = datetime.now(timezone.utc) - timedelta(days=PAGE_REFRESH_DAYS)
