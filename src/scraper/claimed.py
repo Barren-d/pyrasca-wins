@@ -123,11 +123,13 @@ def match_prize_tier_ids(claims: list[dict[str, Any]]) -> list[dict[str, Any]]:
             claim["prize_tier_id"] = None
         return claims
 
-    # Step 1 — all snapshots, ordered newest first, so the dict pickup keeps the latest
+    # Step 1 — all non-empty snapshots, ordered newest first, so the dict pickup keeps
+    # the latest one with a prize table (empty snapshots have no tiers to match against)
     snap_rows = (
         client.table("game_snapshots")
         .select("snapshot_id, game_id, price, scraped_at")
         .in_("game_id", game_ids)
+        .not_.is_("total_scenarios", "null")
         .order("scraped_at", desc=True)
         .execute()
         .data

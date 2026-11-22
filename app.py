@@ -33,6 +33,9 @@ def load_latest_snapshots() -> pd.DataFrame:
             "expected_return_per_euro, adj_expected_return_per_euro, "
             "sell_through, sell_through_se, low_confidence, retention_calibrated"
         )
+        # Skip empty snapshots left by runs where the prize page failed to parse,
+        # so "latest" means the latest one that actually has a prize table.
+        .not_.is_("total_scenarios", "null")
         .order("scraped_at", desc=True)
         .limit(2000)
         .execute()

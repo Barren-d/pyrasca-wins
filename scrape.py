@@ -213,11 +213,12 @@ def _recalculate_ev(empirical_retention) -> None:
                 break
             cp_offset += cp_page
 
-        # latest snapshot per price
+        # latest non-empty snapshot per price
         snapshots = (
             client.table("game_snapshots")
             .select("snapshot_id, price, total_scenarios")
             .eq("game_id", game_id)
+            .not_.is_("total_scenarios", "null")
             .order("scraped_at", desc=True)
             .execute()
             .data
