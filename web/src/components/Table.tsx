@@ -19,7 +19,8 @@ export function Th({ children, left, className = "" }: { children: ReactNode; le
 }
 
 export function Td({ children, left, className = "" }: { children: ReactNode; left?: boolean; className?: string }) {
-  return <td className={`border-b border-line-soft px-3 py-3.5 ${left ? "text-left" : ""} ${className}`}>{children}</td>;
+  // Right-aligned cells hold numbers and dates: keep them on one line
+  return <td className={`border-b border-line-soft px-3 py-3.5 ${left ? "text-left" : "whitespace-nowrap"} ${className}`}>{children}</td>;
 }
 
 export function Chip({ children, tone }: { children: ReactNode; tone: "warn" | "neutral" | "strong" | "quiet" }) {

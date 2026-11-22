@@ -258,3 +258,140 @@ export async function getGameClaims(gameId: string, price: number, multiPrice: b
   );
   return rows.map((r) => ({ claimId: r.claim_id, prize: Number(r.prize_amount), winner: r.winner, claimedAt: r.claimed_at }));
 }
+
+// ─── Recent wins ────────────────────────────────────────────────────────────────
+
+export type WinFilter = "all" | "x5" | "k1";
+
+const WIN_FILTERS: Record<WinFilter, string> = {
+  all: "",
+  x5: "prize_multiple=gte.5", // 5× the ticket or more
+  k1: "prize_amount=gte.1000",
+};
+
+export type FeedWin = Win & { winner: string | null };
+
+/** Newest wins for one filter, and how many wins match it in total. */
+export async function getRecentWins(filter: WinFilter, limit = 100): Promise<{ wins: FeedWin[]; total: number }> {
+  "use cache";
+  cacheLife(CACHE);
+  const where = WIN_FILTERS[filter];
+  const [rows, total] = await Promise.all([
+    select<WinRow & { winner: string | null }>(
+      "recent_wins?select=claim_id,game_id,game_name,winner,prize_amount,ticket_price,claimed_at" +
+        `${where ? `&${where}` : ""}&order=claimed_at.desc&limit=${limit}`,
+    ),
+    count("recent_wins", where),
+  ]);
+  return {
+    total,
+    wins: rows.map((r) => ({
+      claimId: r.claim_id,
+      gameId: r.game_id,
+      gameName: r.game_name,
+      winner: r.winner,
+      prize: Number(r.prize_amount),
+      ticketPrice: r.ticket_price === null ? null : Number(r.ticket_price),
+      claimedAt: r.claimed_at,
+    })),
+  };
+}
+
+/** Each game's own name (the winners list sometimes shortens it). */
+export async function getGameNames(): Promise<Record<string, string>> {
+  "use cache";
+  cacheLife(CACHE);
+  const rows = await select<{ game_id: string; name: string }>("games?select=game_id,name");
+  return Object.fromEntries(rows.map((r) => [r.game_id, r.name]));
+}
+
+// ─── Archive ────────────────────────────────────────────────────────────────────
+
+export type InactiveTicket = {
+  gameId: string;
+  name: string;
+  price: number;
+  launched: string | null; // official first day of sale, else ONCE's date (ISO day)
+  ended: string; // last day we saw it on sale (ISO)
+  paper: number | null;
+  topPrize: number | null;
+  topPrinted: number | null;
+  topClaimed: number | null;
+  /** A game on sale now that continues this one (same name, or same code with another theme). */
+  relaunch: { gameId: string; name: string; since: string | null } | null;
+};
+
+type GameListRow = {
+  game_id: string;
+  name: string;
+  prices: number[] | null;
+  game_start: string | null;
+  last_seen: string;
+  active: boolean;
+};
+
+/** Theme suffixes (_01, _02, …) are skins of one product: "EF8_03" → "EF8". */
+const baseCode = (gameId: string) => gameId.split("_")[0];
+/** Name compared ignoring case and accents: "Súper" = "Super". */
+export const sameName = (a: string, b: string) => {
+  const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+  return norm(a) === norm(b);
+};
+
+export async function getInactiveTickets(): Promise<InactiveTicket[]> {
+  "use cache";
+  cacheLife(CACHE);
+  const [games, rows] = await Promise.all([
+    select<GameListRow>("games?select=game_id,name,prices,game_start,last_seen,active"),
+    select<{
+      game_id: string;
+      price: number;
+      sale_start: string | null;
+      payback_per_euro: number | null;
+      top_prize: number | null;
+      top_prizes_printed: number | null;
+      top_prizes_claimed: number | null;
+    }>(
+      "game_overview?select=game_id,price,sale_start,payback_per_euro,top_prize,top_prizes_printed,top_prizes_claimed&active=eq.false",
+    ),
+  ]);
+  const start = (g: GameListRow) => (g.game_start ? madridDate(g.game_start) : null);
+  const active = games.filter((g) => g.active);
+  const relaunchOf = (g: GameListRow) => {
+    const s = start(g) ?? "";
+    const next = active
+      .filter((a) => (baseCode(a.game_id) === baseCode(g.game_id) || sameName(a.name, g.name)) && (start(a) ?? "") > s)
+      .sort((a, b) => (start(a) ?? "").localeCompare(start(b) ?? ""))[0];
+    return next ? { gameId: next.game_id, name: next.name, since: start(next) } : null;
+  };
+
+  const byId = new Map(games.map((g) => [g.game_id, g]));
+  const withTable = new Set(rows.map((r) => r.game_id));
+  const tickets: InactiveTicket[] = rows.flatMap((r) => {
+    const g = byId.get(r.game_id);
+    if (!g) return [];
+    return [{
+      gameId: g.game_id,
+      name: g.name,
+      price: Number(r.price),
+      launched: r.sale_start ?? start(g),
+      ended: g.last_seen,
+      paper: num(r.payback_per_euro),
+      topPrize: num(r.top_prize),
+      topPrinted: num(r.top_prizes_printed),
+      topClaimed: num(r.top_prizes_claimed),
+      relaunch: relaunchOf(g),
+    }];
+  });
+  // Inactive games whose prize table was never read still get a row
+  for (const g of games) {
+    if (g.active || withTable.has(g.game_id)) continue;
+    for (const price of g.prices ?? []) {
+      tickets.push({
+        gameId: g.game_id, name: g.name, price: Number(price), launched: start(g), ended: g.last_seen,
+        paper: null, topPrize: null, topPrinted: null, topClaimed: null, relaunch: relaunchOf(g),
+      });
+    }
+  }
+  return tickets.sort((a, b) => b.ended.localeCompare(a.ended) || b.price - a.price);
+}

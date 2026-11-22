@@ -83,7 +83,6 @@
     "inactive": "No longer on sale",
     "lastSeenOn": "Last seen on sale {date}",
     "priceTabs": "Ticket price",
-    "officialPage": "ONCE game page",
     "endNotice": "End-of-sale notice",
     "expectedReturn": "Expected return",
     "perEuro": "per €1",
@@ -114,6 +113,43 @@
     "claimsSeen": "Claims seen",
     "annuity": "{amount} a year for {years} years",
     "latestClaims": "Latest claims on {name}",
-    "noClaims": "No claims seen yet."
+    "noClaims": "No claims seen yet.",
+    "playOnOnce": "Play on ONCE",
+    "viewOnOnce": "View on ONCE",
+    "opensNewTab": "opens in a new tab"
+  },
+  "wins": {
+    "title": "Recent wins",
+    "intro": "Newest claims across every game.",
+    "show": "Show",
+    "filterAll": "All wins",
+    "filterX5": "5× or more",
+    "filterAmount": "{amount} or more",
+    "summary": "Latest {n} of {total} wins",
+    "prize": "Prize",
+    "multiple": "× ticket",
+    "winner": "Winner",
+    "claimed": "Claimed",
+    "note": "Every claim is still stored and used in the return estimates; this filter only changes what the list shows. Times are Spanish local time.",
+    "empty": "No wins to show."
+  },
+  "archive": {
+    "title": "Inactive games",
+    "intro": "Games no longer on sale, since we started tracking in May 2026.",
+    "count": "Games no longer on sale",
+    "typicalLife": "Typical time on sale",
+    "noTopClaim": "Ended with no top-prize claim seen",
+    "ofN": "of {n}",
+    "ended": "Ended",
+    "onSaleFor": "On sale for",
+    "topPrize": "Top prize",
+    "topClaims": "Top-prize claims seen",
+    "claimsOf": "{claimed} of {printed}",
+    "code": "Code {code}",
+    "relaunched": "Relaunched {date}",
+    "relaunchedAs": "Relaunched as {name}",
+    "weeks": "{n} weeks",
+    "months": "{n} months",
+    "note": "Claims seen are those in the public winners list while we were tracking. Prizes in tickets never sold before a game ended are never claimed. \"—\" means no prize table was published."
   }
 }

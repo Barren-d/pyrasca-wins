@@ -81,6 +81,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
                   {fill(t.rank, { n: rank, total: onSale.length })}
                 </span>
               )}
+              <OnceButton href={g.url} label={g.active ? t.playOnOnce : t.viewOnOnce} newTab={t.opensNewTab} primary={g.active} />
             </div>
           </div>
           {multiPrice && (
@@ -216,19 +217,14 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
           )}
         </section>
 
-        <p className="m-0 text-sm text-muted">
-          <a href={g.url} className="font-semibold text-brand hover:text-brand-dark" rel="noopener">
-            {t.officialPage}
-          </a>
+        <div className="flex flex-wrap items-center gap-4">
+          <OnceButton href={g.url} label={g.active ? t.playOnOnce : t.viewOnOnce} newTab={t.opensNewTab} primary={g.active} />
           {g.endSourceUrl && (
-            <>
-              {" · "}
-              <a href={g.endSourceUrl} className="font-semibold text-brand hover:text-brand-dark" rel="noopener">
-                {t.endNotice}
-              </a>
-            </>
+            <a href={g.endSourceUrl} target="_blank" rel="noopener" className="text-sm font-semibold text-brand hover:text-brand-dark">
+              {t.endNotice}
+            </a>
           )}
-        </p>
+        </div>
       </main>
       <SiteFooter dict={dict} />
     </>
@@ -244,5 +240,26 @@ function Figure({ label, value, unit, note, warn }: { label: string; value: stri
       </span>
       {note && <span className={`num text-[13px] ${warn ? "font-semibold text-warn" : "text-muted"}`}>{note}</span>}
     </div>
+  );
+}
+
+/** Link out to the game on ONCE's site, in a new tab so pyRasca stays open. */
+function OnceButton({ href, label, newTab, primary }: { href: string; label: string; newTab: string; primary: boolean }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className={
+        "inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[15px] font-semibold no-underline " +
+        (primary ? "bg-brand text-white hover:bg-brand-dark" : "border border-control bg-card text-ink hover:border-ink")
+      }
+    >
+      {label}
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 17L17 7M9 7h8v8" />
+      </svg>
+      <span className="sr-only">({newTab})</span>
+    </a>
   );
 }
