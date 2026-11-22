@@ -22,10 +22,21 @@ function headers(key: string, extra?: Record<string, string>) {
 /** GET /rest/v1/{path}, e.g. "game_overview?select=name&active=eq.true". */
 export async function select<T>(path: string): Promise<T[]> {
   const { url, key } = config();
-  const res = await fetch(`${url}/rest/v1/${path}`, { headers: headers(key) });
-  if (!res.ok) throw new Error(`Supabase ${res.status} on ${path.split("?")[0]}: ${await res.text()}`);
-  return res.json();
+  // Retry briefly on server errors and statement timeouts (code 57014), which come
+  // from momentary load (e.g. many pages building at once), not from a bad query.
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${url}/rest/v1/${path}`, { headers: headers(key) });
+    if (res.ok) return res.json();
+    const body = await res.text();
+    if (res.status >= 500 && attempt < RETRIES) {
+      await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+      continue;
+    }
+    throw new Error(`Supabase ${res.status} on ${path.split("?")[0]}: ${body}`);
+  }
 }
+
+const RETRIES = 3; // waits 0.5 s, 1 s, 2 s
 
 /** Exact row count of a table or view, with optional PostgREST filters. */
 export async function count(table: string, filters = ""): Promise<number> {

@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { isLocale } from "@/i18n/config";
-import { getAllGameIds, getGame } from "@/lib/data";
+import { getGame, getPrerenderTickets } from "@/lib/data";
 import { formatters } from "@/lib/format";
 import { GameView } from "../GameView";
 
+// Tickets on sale are prebuilt (one database query lists them); inactive games
+// build on their first visit and are then cached.
 export async function generateStaticParams() {
-  const ids = await getAllGameIds();
-  const games = await Promise.all(ids.map(getGame));
-  return games.flatMap((prices) => prices.map((p) => ({ gameId: p.gameId, price: String(p.price) })));
+  return (await getPrerenderTickets()).map((t) => ({ gameId: t.gameId, price: String(t.price) }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/games/[gameId]/[price]">): Promise<Metadata> {

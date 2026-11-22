@@ -40,29 +40,10 @@ type OverviewRow = {
 const madridDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" });
 const madridDate = (iso: string) => madridDay.format(new Date(iso)); // "2021-02-16"
 
+/** Tickets on sale, best adjusted return first (from the one cached overview query). */
 export async function getTicketsOnSale(): Promise<Ticket[]> {
-  "use cache";
-  cacheLife(CACHE);
-  const rows = await select<OverviewRow>(
-    "game_overview?select=game_id,name,price,payback_per_euro,adj_payback_per_euro," +
-      "sell_through,low_confidence,win_chance,game_start,sale_start,sale_end,listing_label&active=eq.true",
-  );
-  return rows
-    .filter((r) => r.payback_per_euro !== null)
-    .map((r) => ({
-      gameId: r.game_id,
-      name: r.name,
-      price: Number(r.price),
-      paper: Number(r.payback_per_euro),
-      adjusted: Number(r.adj_payback_per_euro ?? r.payback_per_euro),
-      soldShare: r.sell_through === null ? null : Number(r.sell_through),
-      lowConfidence: !!r.low_confidence,
-      winChance: r.win_chance === null ? null : Number(r.win_chance),
-      onSaleSince: r.sale_start ?? (r.game_start ? madridDate(r.game_start) : null),
-      saleEnd: r.sale_end,
-      lastDays: /ltimos d/i.test(r.listing_label ?? ""),
-    }))
-    .sort((a, b) => b.adjusted - a.adjusted);
+  const all = await getAllGamePrices();
+  return all.filter((g) => g.active && g.hasPrizeTable).sort((a, b) => b.adjusted - a.adjusted);
 }
 
 export async function getClaimCount(): Promise<number> {
@@ -147,15 +128,18 @@ type GameRow = OverviewRow & {
 
 const num = (v: number | null) => (v === null ? null : Number(v));
 
-/** Every ticket price of one game (active or not), highest price first. */
-export async function getGame(gameId: string): Promise<GamePrice[]> {
+/**
+ * Every game × ticket price in game_overview, active or not, in ONE cached query.
+ * Pages and the build share it, instead of each asking the database for its own
+ * game (hundreds of parallel queries during a build hit Supabase's statement timeout).
+ */
+export async function getAllGamePrices(): Promise<(GamePrice & { hasPrizeTable: boolean })[]> {
   "use cache";
   cacheLife(CACHE);
   const rows = await select<GameRow>(
     "game_overview?select=game_id,name,price,payback_per_euro,adj_payback_per_euro,sell_through,low_confidence," +
       "win_chance,game_start,sale_start,sale_end,listing_label,active,url,series_size,winning_scenarios," +
-      `top_prize,top_prizes_printed,top_prizes_claimed,last_seen,end_source_url&game_id=eq.${encodeURIComponent(gameId)}` +
-      "&order=price.desc",
+      "top_prize,top_prizes_printed,top_prizes_claimed,last_seen,end_source_url",
   );
   return rows.map((r) => ({
     gameId: r.game_id,
@@ -163,6 +147,7 @@ export async function getGame(gameId: string): Promise<GamePrice[]> {
     price: Number(r.price),
     paper: Number(r.payback_per_euro ?? 0),
     adjusted: Number(r.adj_payback_per_euro ?? r.payback_per_euro ?? 0),
+    hasPrizeTable: r.payback_per_euro !== null,
     soldShare: num(r.sell_through),
     lowConfidence: !!r.low_confidence,
     winChance: num(r.win_chance),
@@ -181,12 +166,18 @@ export async function getGame(gameId: string): Promise<GamePrice[]> {
   }));
 }
 
-/** Game ids for prerendering every game page at build time. */
-export async function getAllGameIds(): Promise<string[]> {
-  "use cache";
-  cacheLife(CACHE);
-  const rows = await select<{ game_id: string }>("game_overview?select=game_id");
-  return [...new Set(rows.map((r) => r.game_id))];
+/** Every ticket price of one game (active or not), highest price first. */
+export async function getGame(gameId: string): Promise<GamePrice[]> {
+  const all = await getAllGamePrices();
+  return all.filter((g) => g.gameId === gameId).sort((a, b) => b.price - a.price);
+}
+
+/**
+ * Game pages to build ahead of time: the tickets on sale. Inactive games' pages are
+ * built on their first visit and then cached, which keeps the build's database load low.
+ */
+export async function getPrerenderTickets(): Promise<{ gameId: string; price: number }[]> {
+  return (await getTicketsOnSale()).map((t) => ({ gameId: t.gameId, price: t.price }));
 }
 
 export type Tier = {

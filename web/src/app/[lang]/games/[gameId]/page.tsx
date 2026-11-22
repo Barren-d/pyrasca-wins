@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { isLocale } from "@/i18n/config";
-import { getAllGameIds, getGame } from "@/lib/data";
+import { getGame, getPrerenderTickets } from "@/lib/data";
 import { GameView } from "./GameView";
 
-// Every game known today is prerendered; a new one renders on its first visit.
+// Lists link to /games/[id]/[price], which is prebuilt; this plain address (used by
+// "Relaunched" links) builds on its first visit. One id is needed for build validation.
 export async function generateStaticParams() {
-  return (await getAllGameIds()).map((gameId) => ({ gameId }));
+  return (await getPrerenderTickets()).slice(0, 1).map((t) => ({ gameId: t.gameId }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/games/[gameId]">): Promise<Metadata> {
