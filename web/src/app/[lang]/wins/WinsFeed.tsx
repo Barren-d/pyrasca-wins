@@ -31,7 +31,11 @@ export function WinsFeed({ locale, names, feeds, dict }: Props) {
   return (
     <>
       <section className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label={t.show} className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-label={t.show}
+          className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
+        >
           {filters.map((f) => (
             <button
               key={f.id}
@@ -39,7 +43,7 @@ export function WinsFeed({ locale, names, feeds, dict }: Props) {
               aria-pressed={filter === f.id}
               onClick={() => setFilter(f.id)}
               className={
-                "min-h-11 cursor-pointer rounded-full border px-[18px] text-[15px] " +
+                "min-h-11 shrink-0 cursor-pointer rounded-full border px-[18px] text-[15px] whitespace-nowrap " +
                 (filter === f.id ? "border-ink bg-ink font-semibold text-white" : "border-control bg-card font-medium text-ink hover:border-ink")
               }
             >

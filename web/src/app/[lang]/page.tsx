@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { Stat, StatGrid } from "@/components/Stat";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getBiggestWinsThisWeek, getClaimCount, getLastUpdate, getTicketsOnSale } from "@/lib/data";
@@ -40,7 +41,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
           <p className="m-0 text-lg leading-[1.55] text-muted">{dict.home.intro}</p>
         </section>
 
-        <section aria-label="Key figures" className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+        <StatGrid label="Key figures">
           <Stat label={dict.home.gamesOnSale} value={fmt.int(gamesOnSale)} />
           <Stat label={dict.home.winsTracked} value={fmt.int(claims)} />
           <Stat
@@ -48,7 +49,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             value={best === undefined ? "—" : fmt.perEuro(best)}
             unit={best === undefined ? undefined : dict.home.perEuro}
           />
-        </section>
+        </StatGrid>
 
         <Picks locale={lang} tickets={tickets} dict={{ home: dict.home, table: dict.table, chips: dict.chips }} />
 
@@ -62,12 +63,12 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
           {wins.length === 0 ? (
             <p className="m-0 text-[15px] text-muted">{dict.home.noWins}</p>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] sm:gap-4">
               {wins.map((w) => (
-                <div key={w.claimId} className="flex flex-col gap-2 rounded-xl border border-line bg-card px-6 py-5">
-                  <span className="num font-display text-[32px] font-semibold tracking-[-0.02em]">{fmt.prize(w.prize)}</span>
-                  <span className="text-[15px] font-semibold">{(w.gameId && nameOf.get(w.gameId)) || w.gameName}</span>
-                  <span className="num text-sm text-muted">
+                <div key={w.claimId} className="flex flex-col gap-1.5 rounded-xl border border-line bg-card px-3 py-3 sm:gap-2 sm:px-6 sm:py-5">
+                  <span className="num font-display text-2xl font-semibold tracking-[-0.02em] sm:text-[32px]">{fmt.prize(w.prize)}</span>
+                  <span className="text-sm font-semibold sm:text-[15px]">{(w.gameId && nameOf.get(w.gameId)) || w.gameName}</span>
+                  <span className="num text-xs text-muted sm:text-sm">
                     {w.ticketPrice === null
                       ? fmt.dayMonth(w.claimedAt)
                       : fill(dict.home.winMeta, { price: fmt.ticket(w.ticketPrice), date: fmt.dayMonth(w.claimedAt) })}
@@ -80,16 +81,5 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
       </main>
       <SiteFooter dict={dict} />
     </>
-  );
-}
-
-function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-card px-6 py-5">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="num font-display text-4xl font-semibold">
-        {value} {unit && <span className="text-base font-medium text-muted">{unit}</span>}
-      </span>
-    </div>
   );
 }

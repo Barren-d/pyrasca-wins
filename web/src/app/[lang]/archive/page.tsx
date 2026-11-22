@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { Stat, StatGrid } from "@/components/Stat";
 import { HeadRow, Table, Td, Th } from "@/components/Table";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -43,11 +44,11 @@ export default async function Archive({ params }: PageProps<"/[lang]/archive">) 
           <p className="m-0 text-[17px] leading-[1.55] text-muted">{t.intro}</p>
         </section>
 
-        <section aria-label="Key figures" className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+        <StatGrid label="Key figures">
           <Stat label={t.count} value={fmt.int(games.length)} />
           <Stat label={t.typicalLife} value={typical === null ? "—" : life(typical)} />
           <Stat label={t.noTopClaim} value={fmt.int(noTopClaim)} unit={fill(t.ofN, { n: fmt.int(withTop.length) })} />
-        </section>
+        </StatGrid>
 
         <Table minWidth="min-w-[960px]">
           <thead>
@@ -114,15 +115,4 @@ function median(values: number[]): number | null {
   const s = [...values].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
-
-function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-card px-6 py-5">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="num font-display text-4xl font-semibold">
-        {value} {unit && <span className="text-base font-medium text-muted">{unit}</span>}
-      </span>
-    </div>
-  );
 }

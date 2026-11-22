@@ -14,18 +14,20 @@ export function SiteHeader({ locale, dict, active }: { locale: Locale; dict: Dic
   ];
   return (
     <header className="border-b border-line bg-card">
-      <nav className="mx-auto flex min-h-16 max-w-[1120px] flex-wrap items-center justify-between gap-3 px-6">
-        <Link href={`/${locale}`} className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink no-underline">
+      {/* Phone: logo and language on top, the links in one sideways-scrolling row below.
+          From md up: logo left, links and language together on the right. */}
+      <nav className="mx-auto flex min-h-16 max-w-[1120px] flex-wrap items-center gap-x-3 px-4 md:px-6">
+        <Link href={`/${locale}`} className="py-3 font-display text-[22px] font-bold tracking-[-0.02em] text-ink no-underline">
           py<span className="text-brand">Rasca</span>
         </Link>
-        <div className="ml-auto flex flex-wrap gap-1">
+        <div className="order-last -mx-4 flex w-[calc(100%+2rem)] flex-nowrap gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:order-none md:mx-0 md:ml-auto md:w-auto md:px-0">
           {links.map((l) => (
             <Link
               key={l.id}
               href={l.href}
               aria-current={l.id === active ? "page" : undefined}
               className={
-                "px-3.5 py-3 text-[15px] no-underline " +
+                "shrink-0 px-3 py-3 text-[15px] whitespace-nowrap no-underline md:px-3.5 " +
                 (l.id === active ? "border-b-2 border-brand font-semibold text-ink" : "font-medium text-muted hover:text-ink")
               }
             >
@@ -33,7 +35,9 @@ export function SiteHeader({ locale, dict, active }: { locale: Locale; dict: Dic
             </Link>
           ))}
         </div>
-        <LanguageMenu current={locale} label={dict.nav.language} />
+        <div className="ml-auto md:ml-0">
+          <LanguageMenu current={locale} label={dict.nav.language} />
+        </div>
       </nav>
     </header>
   );

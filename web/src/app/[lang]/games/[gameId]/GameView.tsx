@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { ChoiceRow } from "@/components/ChoiceRow";
+import { Stat, StatGrid } from "@/components/Stat";
 import { HeadRow, Table, Td, Th } from "@/components/Table";
 import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -85,8 +87,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
             </div>
           </div>
           {multiPrice && (
-            <div role="group" aria-label={t.priceTabs} className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-muted">{t.priceTabs}</span>
+            <ChoiceRow label={t.priceTabs}>
               {prices.map((p) => (
                 <Link
                   key={p.price}
@@ -95,19 +96,19 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
                   scroll={false}
                   aria-current={p.price === g.price ? "page" : undefined}
                   className={
-                    "num flex min-h-10 items-center rounded-full border px-4 text-[15px] no-underline " +
+                    "num flex min-h-10 shrink-0 items-center rounded-full border px-4 text-[15px] no-underline " +
                     (p.price === g.price ? "border-ink bg-ink font-semibold text-white" : "border-control bg-card font-medium text-ink hover:border-ink")
                   }
                 >
                   {fmt.ticket(p.price)}
                 </Link>
               ))}
-            </div>
+            </ChoiceRow>
           )}
         </section>
 
-        <section aria-label="Key figures" className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
-          <Figure
+        <StatGrid label="Key figures" cols={2}>
+          <Stat
             label={t.expectedReturn}
             value={fmt.perEuro(g.adjusted)}
             unit={t.perEuro}
@@ -116,17 +117,17 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
             }`}
             warn={drop >= CLAIMED_DROP}
           />
-          <Figure
+          <Stat
             label={t.chanceAny}
             value={g.winChance ? fill(dict.allGames.odds, { n: fmt.oneIn(g.winChance) }) : "—"}
             note={g.winningTickets ? fill(t.winningTickets, { n: fmt.int(g.winningTickets) }) : ""}
           />
-          <Figure
+          <Stat
             label={t.sold}
             value={g.soldShare === null ? "—" : fmt.pct(g.soldShare)}
             note={g.lowConfidence ? t.soldNoteLow : t.soldNote}
           />
-          <Figure
+          <Stat
             label={t.topPrize}
             value={g.topPrize === null ? "—" : fmt.prize(g.topPrize)}
             note={
@@ -138,7 +139,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
             }
             warn={!!g.topPrizesClaimed}
           />
-        </section>
+        </StatGrid>
 
         <section className="flex flex-col gap-4 rounded-xl border border-line bg-card px-6 py-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -228,18 +229,6 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
       </main>
       <SiteFooter dict={dict} />
     </>
-  );
-}
-
-function Figure({ label, value, unit, note, warn }: { label: string; value: string; unit?: string; note: string; warn?: boolean }) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-card px-6 py-5">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="num font-display text-[28px] leading-tight font-semibold">
-        {value} {unit && <span className="text-base font-medium text-muted">{unit}</span>}
-      </span>
-      {note && <span className={`num text-[13px] ${warn ? "font-semibold text-warn" : "text-muted"}`}>{note}</span>}
-    </div>
   );
 }
 

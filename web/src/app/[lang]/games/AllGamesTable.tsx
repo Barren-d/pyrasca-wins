@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ChoiceRow } from "@/components/ChoiceRow";
 import { Chip, HeadRow, Table, Td, Th } from "@/components/Table";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -47,8 +48,7 @@ export function AllGamesTable({ locale, tickets, dict }: Props) {
   return (
     <>
       <section aria-label={t.ticketPrice} className="flex flex-col gap-4">
-        <div role="group" aria-label={t.ticketPrice} className="flex flex-wrap items-center gap-2">
-          <span className="min-w-[88px] text-sm font-semibold text-muted">{t.ticketPrice}</span>
+        <ChoiceRow label={t.ticketPrice}>
           <Pill on={price === "all"} onClick={() => setPrice("all")}>
             {t.all}
           </Pill>
@@ -57,10 +57,9 @@ export function AllGamesTable({ locale, tickets, dict }: Props) {
               {fmt.ticket(p)}
             </Pill>
           ))}
-        </div>
+        </ChoiceRow>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div role="group" aria-label={t.sortBy} className="flex flex-wrap items-center gap-2">
-            <span className="min-w-[88px] text-sm font-semibold text-muted">{t.sortBy}</span>
+          <ChoiceRow label={t.sortBy}>
             {sorts.map((s) => (
               <button
                 key={s.id}
@@ -68,7 +67,7 @@ export function AllGamesTable({ locale, tickets, dict }: Props) {
                 aria-pressed={sort === s.id}
                 onClick={() => setSort(s.id)}
                 className={
-                  "min-h-11 cursor-pointer rounded-lg border px-4 text-[15px] " +
+                  "min-h-11 shrink-0 cursor-pointer rounded-lg border px-4 text-[15px] whitespace-nowrap " +
                   (sort === s.id
                     ? "border-brand bg-[#E3F1EC] font-semibold text-brand-dark"
                     : "border-control bg-card font-medium text-ink hover:border-ink")
@@ -77,7 +76,7 @@ export function AllGamesTable({ locale, tickets, dict }: Props) {
                 {s.label}
               </button>
             ))}
-          </div>
+          </ChoiceRow>
           <p className="num m-0 text-sm text-muted" aria-live="polite">
             {fill(t.summary, { n: rows.length, total: tickets.length })}
           </p>
@@ -151,7 +150,7 @@ function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; chi
       aria-pressed={on}
       onClick={onClick}
       className={
-        "min-h-11 cursor-pointer rounded-full border px-4 text-[15px] " +
+        "min-h-11 shrink-0 cursor-pointer rounded-full border px-4 text-[15px] whitespace-nowrap " +
         (on ? "border-ink bg-ink font-semibold text-white" : "border-control bg-card font-medium text-ink hover:border-ink")
       }
     >
