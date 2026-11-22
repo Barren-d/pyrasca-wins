@@ -1,0 +1,33 @@
+name: Enrich with official product data (daily)
+
+# Reads ONCE's regulation documents and links them to the scraped games
+# (enrich.py). Separate from the scrapers: it only writes its own tables and
+# always exits 0, printing warnings instead of failing.
+
+on:
+  schedule:
+    - cron: '30 7 * * *'  # daily 07:30 UTC
+  workflow_dispatch:
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Random delay (up to 5 minutes)
+        run: sleep $((RANDOM % 300))
+
+      - name: Run enrichment
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python enrich.py

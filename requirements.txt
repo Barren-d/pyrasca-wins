@@ -2,6 +2,7 @@
 curl_cffi>=0.7.0
 beautifulsoup4>=4.12.0
 lxml>=5.1.0
+pypdf>=4.0.0          # regulation PDFs: official launch / end-of-sale dates
 
 # Database
 supabase>=2.4.0

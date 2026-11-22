@@ -66,6 +66,9 @@ def load_latest_snapshots() -> pd.DataFrame:
         df["game_start"] = None
         df["scrape_first_seen"] = None
 
+    # Official dates are an optional extra from enrich.py (game_dates view)
+    df = df.merge(load_official_dates(), on="game_id", how="left")
+
     # keep only the latest snapshot per game × price
     df["scraped_at"] = pd.to_datetime(df["scraped_at"], utc=True)
     df = df.sort_values("scraped_at", ascending=False)
@@ -78,6 +81,21 @@ def load_latest_snapshots() -> pd.DataFrame:
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
 
     return df.reset_index(drop=True)
+
+
+OFFICIAL_DATE_COLUMNS = ["game_id", "listing_label", "sale_start", "sale_end", "end_source", "end_source_url"]
+
+
+@st.cache_data(ttl=300)
+def load_official_dates() -> pd.DataFrame:
+    """Launch / end-of-sale dates from ONCE's regulation documents, via the game_dates
+    view that enrich.py fills. Optional: if the view doesn't exist yet or the read
+    fails, the dashboard works as before, just without dates."""
+    try:
+        rows = get_client().table("game_dates").select(", ".join(OFFICIAL_DATE_COLUMNS)).execute().data
+    except Exception:
+        rows = []
+    return pd.DataFrame(rows, columns=OFFICIAL_DATE_COLUMNS)
 
 
 @st.cache_data(ttl=300)
@@ -193,6 +211,17 @@ def load_last_scrape() -> dict:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+def sale_end_text(row: pd.Series) -> str:
+    """Announced last day of sale ("24 Nov 2026"), "Last days" when the listing says
+    so but no end date has been published, else empty."""
+    end = pd.to_datetime(row.get("sale_end"), errors="coerce")
+    if not pd.isna(end):
+        return end.strftime("%-d %b %Y") if os.name != "nt" else end.strftime("%#d %b %Y")
+    if "ltimos" in str(row.get("listing_label") or ""):
+        return "Last days"
+    return ""
+
 
 def confidence_badge(row: pd.Series) -> str:
     if row.get("low_confidence"):
@@ -475,11 +504,15 @@ def page_all_games(df: pd.DataFrame) -> None:
         lambda r: format_sell_through(r["sell_through"], bool(r.get("low_confidence"))),
         axis=1,
     )
-    display["Started"] = pd.to_datetime(display["game_start"], utc=True, errors="coerce").dt.date
+    # Official first day of sale when known (the listing date resets when a game is re-themed)
+    display["Started"] = pd.to_datetime(display["sale_start"], errors="coerce").dt.date.fillna(
+        pd.to_datetime(display["game_start"], utc=True, errors="coerce").dt.date
+    )
+    display["Ends"] = display.apply(sale_end_text, axis=1)
 
     table_height = 38 + 35 * len(display)
     event = st.dataframe(
-        display[["name", "price", "Started", "EV base", "EV adj", "Sold %", "Confidence"]].rename(
+        display[["name", "price", "Started", "Ends", "EV base", "EV adj", "Sold %", "Confidence"]].rename(
             columns={"name": "Game", "price": "Price (€)"}
         ),
         use_container_width=True,
@@ -512,6 +545,13 @@ def page_game_detail(game_id: str, df: pd.DataFrame) -> None:
     title_col.title(row["name"])
     game_url = row.get("game_url") or "#"
     btn_col.link_button("▶ Play", game_url, use_container_width=True)
+    ends = sale_end_text(row)
+    if ends == "Last days":
+        st.warning("In its last days on sale")
+    elif ends:
+        source, url = row.get("end_source"), row.get("end_source_url")
+        cite = f" · [{source}]({url})" if source and url and not pd.isna(url) else ""
+        st.warning(f"On sale until {ends}{cite}")
 
     # price tab selector
     prices = sorted(game_rows["price"].tolist())
