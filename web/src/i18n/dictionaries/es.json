@@ -4,7 +4,9 @@
     "all": "Todos los juegos",
     "wins": "Premios recientes",
     "archive": "Archivo",
-    "language": "Idioma"
+    "language": "Idioma",
+    "darkMode": "Cambiar a modo oscuro",
+    "lightMode": "Cambiar a modo claro"
   },
   "home": {
     "updated": "Actualizado {time}",

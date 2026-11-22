@@ -67,7 +67,7 @@ export function Picks({ locale, tickets, dict }: Props) {
               </select>
             </label>
           </div>
-          <Link href={`/${locale}/games`} className="text-[15px] font-semibold text-brand hover:text-brand-dark">
+          <Link href={`/${locale}/games`} className="text-[15px] font-semibold text-link hover:text-ink">
             {fill(dict.home.seeAll, { n: tickets.length })}
           </Link>
         </div>

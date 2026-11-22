@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NavTracker } from "@/components/BackLink";
+import { themeScript } from "@/lib/theme";
 import { isLocale, locales } from "@/i18n/config";
 import "../globals.css";
 
@@ -21,7 +22,11 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
   return (
-    <html lang={lang} className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}>
+    // suppressHydrationWarning: themeScript may set data-theme on <html> before React loads
+    <html lang={lang} className={`${inter.variable} ${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-screen font-sans">
         <NavTracker />
         {children}

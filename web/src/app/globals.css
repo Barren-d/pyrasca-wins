@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
-/* pyRasca palette, from the design mock-up */
+/* pyRasca palette, aligned with ONCE's juegosonce.es: their green and light grey,
+   with their yellow only as a small accent. Logo and type stay our own.
+   Every colour is a variable so dark mode (below) can swap it. */
 @theme {
-  --color-paper: #f6f5f1;
-  --color-card: #ffffff;
-  --color-ink: #15171c;
-  --color-muted: #555b66;
-  --color-line: #e3e1da;
-  --color-line-soft: #efede7;
-  --color-control: #c9c6bc;
-  --color-brand: #0a6a4e;
-  --color-brand-dark: #064a36;
-  --color-warn: #8a4b00;
-  --color-warn-soft: #fbeedd;
-  --color-chip: #e6e4de;
-  --color-chip-ink: #3b3f47;
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-control: var(--control);
+  --color-brand: #008137; /* ONCE green: buttons, logo, active tab */
+  --color-brand-hover: #00692c;
+  --color-brand-soft: var(--brand-soft);
+  --color-link: var(--link); /* green for text: darker in light mode, lighter in dark */
+  --color-accent: #ffd500; /* ONCE yellow */
+  --color-on-accent: #24252e;
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-chip: var(--chip);
+  --color-chip-ink: var(--chip-ink);
+  --color-chart-sold: var(--chart-sold);
+  --color-chart-return: var(--chart-return);
+  --color-chart-paper: #8a8f98;
+  --color-logo: var(--logo);
 
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
 }
 
 :root {
+  color-scheme: light dark;
+  --paper: #f1f1f1;
+  --card: #ffffff;
+  --ink: #24252e;
+  --muted: #595c63;
+  --line: #e0e0e0;
+  --line-soft: #ececec;
+  --control: #c4c4c4;
+  --brand-soft: #e9faed;
+  --link: #00692c;
+  --warn: #8a4b00;
+  --warn-soft: #fef6ce;
+  --chip: #e6e6e6;
+  --chip-ink: #3b3d45;
+  --chart-sold: #b45309;
+  --chart-return: #008137;
+  --logo: #008137;
+}
+
+/* Dark mode: follows the device setting unless the visitor picked a theme with the
+   sun/moon button (data-theme on <html>, set before paint by the script in the layout).
+   Every text pairing keeps WCAG AA contrast. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15161b;
+    --card: #1f2027;
+    --ink: #e8e9ec;
+    --muted: #a3a6ae;
+    --line: #33353d;
+    --line-soft: #2a2c33;
+    --control: #4a4d57;
+    --brand-soft: #173a26;
+    --link: #5ccf8c;
+    --warn: #f0b45c;
+    --warn-soft: #3a2f14;
+    --chip: #2e3038;
+    --chip-ink: #c9ccd3;
+    --chart-sold: #e8915a;
+    --chart-return: #3cc27a;
+    --logo: #5ccf8c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15161b;
+  --card: #1f2027;
+  --ink: #e8e9ec;
+  --muted: #a3a6ae;
+  --line: #33353d;
+  --line-soft: #2a2c33;
+  --control: #4a4d57;
+  --brand-soft: #173a26;
+  --link: #5ccf8c;
+  --warn: #f0b45c;
+  --warn-soft: #3a2f14;
+  --chip: #2e3038;
+  --chip-ink: #c9ccd3;
+  --chart-sold: #e8915a;
+  --chart-return: #3cc27a;
+  --logo: #5ccf8c;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
   color-scheme: light;
 }
 

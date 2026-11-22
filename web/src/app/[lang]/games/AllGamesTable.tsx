@@ -69,7 +69,7 @@ export function AllGamesTable({ locale, tickets, dict }: Props) {
                 className={
                   "min-h-11 shrink-0 cursor-pointer rounded-lg border px-4 text-[15px] whitespace-nowrap " +
                   (sort === s.id
-                    ? "border-brand bg-[#E3F1EC] font-semibold text-brand-dark"
+                    ? "border-brand bg-brand-soft font-semibold text-link"
                     : "border-control bg-card font-medium text-ink hover:border-ink")
                 }
               >
@@ -151,7 +151,7 @@ function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; chi
       onClick={onClick}
       className={
         "min-h-11 shrink-0 cursor-pointer rounded-full border px-4 text-[15px] whitespace-nowrap " +
-        (on ? "border-ink bg-ink font-semibold text-white" : "border-control bg-card font-medium text-ink hover:border-ink")
+        (on ? "border-ink bg-ink font-semibold text-paper" : "border-control bg-card font-medium text-ink hover:border-ink")
       }
     >
       {children}

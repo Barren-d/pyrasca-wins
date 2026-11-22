@@ -31,7 +31,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
       <main className="mx-auto flex max-w-[1120px] flex-col gap-12 px-6 pt-14 pb-[72px]">
         <section className="flex max-w-[760px] flex-col gap-4">
           {updated && (
-            <p className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-brand">
+            <p className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-link">
               {fill(dict.home.updated, { time: fmt.updated(updated) })}
             </p>
           )}
@@ -56,7 +56,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         <section className="flex flex-col gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="m-0 font-display text-[28px] font-semibold tracking-[-0.02em]">{dict.home.biggestWins}</h2>
-            <Link href={`/${lang}/wins`} className="text-[15px] font-semibold text-brand hover:text-brand-dark">
+            <Link href={`/${lang}/wins`} className="text-[15px] font-semibold text-link hover:text-ink">
               {dict.home.allWins}
             </Link>
           </div>

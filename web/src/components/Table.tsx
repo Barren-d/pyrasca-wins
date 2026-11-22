@@ -27,7 +27,7 @@ export function Chip({ children, tone }: { children: ReactNode; tone: "warn" | "
   const styles = {
     warn: "bg-warn-soft text-warn font-semibold",
     neutral: "bg-chip text-chip-ink font-semibold",
-    strong: "bg-warn text-white font-bold",
+    strong: "bg-warn text-card font-bold",
     quiet: "bg-line-soft text-muted font-semibold",
   }[tone];
   return <span className={`rounded-full px-2 py-[3px] text-xs whitespace-nowrap ${styles}`}>{children}</span>;

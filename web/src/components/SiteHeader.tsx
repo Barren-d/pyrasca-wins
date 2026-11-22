@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { LanguageMenu } from "./LanguageMenu";
+import { ThemeToggle } from "./ThemeToggle";
 
 export type Section = "picks" | "all" | "wins" | "archive";
 
@@ -18,7 +19,7 @@ export function SiteHeader({ locale, dict, active }: { locale: Locale; dict: Dic
           From md up: logo left, links and language together on the right. */}
       <nav className="mx-auto flex min-h-16 max-w-[1120px] flex-wrap items-center gap-x-3 px-4 md:px-6">
         <Link href={`/${locale}`} className="py-3 font-display text-[22px] font-bold tracking-[-0.02em] text-ink no-underline">
-          py<span className="text-brand">Rasca</span>
+          py<span className="text-logo">Rasca</span>
         </Link>
         <div className="order-last -mx-4 flex w-[calc(100%+2rem)] flex-nowrap gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:order-none md:mx-0 md:ml-auto md:w-auto md:px-0">
           {links.map((l) => (
@@ -35,7 +36,8 @@ export function SiteHeader({ locale, dict, active }: { locale: Locale; dict: Dic
             </Link>
           ))}
         </div>
-        <div className="ml-auto md:ml-0">
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <ThemeToggle toDark={dict.nav.darkMode} toLight={dict.nav.lightMode} />
           <LanguageMenu current={locale} label={dict.nav.language} />
         </div>
       </nav>

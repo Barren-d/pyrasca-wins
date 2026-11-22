@@ -65,7 +65,7 @@ export function LanguageMenu({ current, label }: { current: Locale; label: strin
               <Flag locale={locale} size={22} />
               <span className="flex-1">{localeNames[locale]}</span>
               {locale === current && (
-                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0A6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-link" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               )}

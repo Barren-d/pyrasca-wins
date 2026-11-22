@@ -49,7 +49,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
         <section className="flex flex-col gap-5">
           <BackLink
             fallback={g.active ? `/${locale}/games` : `/${locale}/archive`}
-            className="flex w-fit items-center gap-1.5 text-[15px] font-semibold text-brand no-underline hover:text-brand-dark"
+            className="flex w-fit items-center gap-1.5 text-[15px] font-semibold text-link no-underline hover:text-ink"
           >
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
@@ -79,7 +79,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
                 <span className="rounded-full bg-warn-soft px-3 py-1.5 text-sm font-semibold text-warn">{dict.chips.lastDays}</span>
               )}
               {rank > 0 && (
-                <span className="num rounded-full bg-[#E3F1EC] px-3 py-1.5 text-sm font-semibold text-brand-dark">
+                <span className="num rounded-full bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent">
                   {fill(t.rank, { n: rank, total: onSale.length })}
                 </span>
               )}
@@ -97,7 +97,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
                   aria-current={p.price === g.price ? "page" : undefined}
                   className={
                     "num flex min-h-10 shrink-0 items-center rounded-full border px-4 text-[15px] no-underline " +
-                    (p.price === g.price ? "border-ink bg-ink font-semibold text-white" : "border-control bg-card font-medium text-ink hover:border-ink")
+                    (p.price === g.price ? "border-ink bg-ink font-semibold text-paper" : "border-control bg-card font-medium text-ink hover:border-ink")
                   }
                 >
                   {fmt.ticket(p.price)}
@@ -199,7 +199,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
         <section className="flex flex-col gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="m-0 font-display text-[28px] font-semibold tracking-[-0.02em]">{fill(t.latestClaims, { name: g.name })}</h2>
-            <Link href={`/${locale}/wins`} className="text-[15px] font-semibold text-brand hover:text-brand-dark">
+            <Link href={`/${locale}/wins`} className="text-[15px] font-semibold text-link hover:text-ink">
               {dict.home.allWins}
             </Link>
           </div>
@@ -221,7 +221,7 @@ export async function GameView({ locale, gameId, price }: { locale: Locale; game
         <div className="flex flex-wrap items-center gap-4">
           <OnceButton href={g.url} label={g.active ? t.playOnOnce : t.viewOnOnce} newTab={t.opensNewTab} primary={g.active} />
           {g.endSourceUrl && (
-            <a href={g.endSourceUrl} target="_blank" rel="noopener" className="text-sm font-semibold text-brand hover:text-brand-dark">
+            <a href={g.endSourceUrl} target="_blank" rel="noopener" className="text-sm font-semibold text-link hover:text-ink">
               {t.endNotice}
             </a>
           )}
@@ -241,7 +241,7 @@ function OnceButton({ href, label, newTab, primary }: { href: string; label: str
       rel="noopener"
       className={
         "inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[15px] font-semibold no-underline " +
-        (primary ? "bg-brand text-white hover:bg-brand-dark" : "border border-control bg-card text-ink hover:border-ink")
+        (primary ? "bg-brand text-white hover:bg-brand-hover" : "border border-control bg-card text-ink hover:border-ink")
       }
     >
       {label}

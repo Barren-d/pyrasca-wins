@@ -44,7 +44,7 @@ export function WinsFeed({ locale, names, feeds, dict }: Props) {
               onClick={() => setFilter(f.id)}
               className={
                 "min-h-11 shrink-0 cursor-pointer rounded-full border px-[18px] text-[15px] whitespace-nowrap " +
-                (filter === f.id ? "border-ink bg-ink font-semibold text-white" : "border-control bg-card font-medium text-ink hover:border-ink")
+                (filter === f.id ? "border-ink bg-ink font-semibold text-paper" : "border-control bg-card font-medium text-ink hover:border-ink")
               }
             >
               {f.label}
@@ -88,7 +88,7 @@ export function WinsFeed({ locale, names, feeds, dict }: Props) {
                     )}
                   </Td>
                   <Td>{w.ticketPrice === null ? "—" : fmt.ticket(w.ticketPrice)}</Td>
-                  <Td className={w.prize >= BIG_PRIZE ? "font-bold text-brand" : "font-semibold"}>{fmt.prize(w.prize)}</Td>
+                  <Td className={w.prize >= BIG_PRIZE ? "font-bold text-link" : "font-semibold"}>{fmt.prize(w.prize)}</Td>
                   <Td className="text-muted">{w.ticketPrice === null ? "—" : `${fmt.int(Math.round(w.prize / w.ticketPrice))}×`}</Td>
                   <Td left className="text-muted">
                     {w.winner ?? "—"}

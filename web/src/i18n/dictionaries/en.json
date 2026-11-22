@@ -4,7 +4,9 @@
     "all": "All games",
     "wins": "Recent wins",
     "archive": "Archive",
-    "language": "Language"
+    "language": "Language",
+    "darkMode": "Switch to dark mode",
+    "lightMode": "Switch to light mode"
   },
   "home": {
     "updated": "Updated {time}",

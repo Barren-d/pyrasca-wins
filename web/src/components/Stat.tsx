@@ -15,7 +15,7 @@ export function Stat({ label, value, unit, note, warn }: { label: string; value:
     <div className="flex flex-col justify-between gap-1.5 rounded-xl border border-line bg-card px-3 py-3 sm:px-6 sm:py-5">
       <span className="text-xs leading-snug text-muted sm:text-sm">{label}</span>
       <div className="flex flex-col gap-1">
-        <span className="num font-display text-xl leading-tight font-semibold sm:text-[32px]">
+        <span className="num font-display text-xl leading-tight font-semibold sm:text-[28px]">
           {value} {unit && <span className="block text-xs font-medium text-muted sm:inline sm:text-base">{unit}</span>}
         </span>
         {note && <span className={`num text-xs sm:text-[13px] ${warn ? "font-semibold text-warn" : "text-muted"}`}>{note}</span>}

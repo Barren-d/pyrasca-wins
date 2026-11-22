@@ -79,7 +79,7 @@ export default async function Archive({ params }: PageProps<"/[lang]/archive">) 
                         {x.relaunch && (
                           <Link
                             href={`/${lang}/games/${x.relaunch.gameId}`}
-                            className="rounded-full bg-[#E3F1EC] px-2 py-0.5 font-semibold text-brand-dark no-underline hover:underline"
+                            className="rounded-full bg-brand-soft px-2 py-0.5 font-semibold text-link no-underline hover:underline"
                           >
                             {sameName(x.relaunch.name, x.name)
                               ? fill(t.relaunched, { date: x.relaunch.since ? fmt.date(x.relaunch.since) : "" }).trim()

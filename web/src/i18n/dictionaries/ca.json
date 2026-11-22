@@ -4,7 +4,9 @@
     "all": "Tots els jocs",
     "wins": "Premis recents",
     "archive": "Arxiu",
-    "language": "Idioma"
+    "language": "Idioma",
+    "darkMode": "Canvia al mode fosc",
+    "lightMode": "Canvia al mode clar"
   },
   "home": {
     "updated": "Actualitzat {time}",

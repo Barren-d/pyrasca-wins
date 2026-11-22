@@ -7,9 +7,9 @@ import { fill, formatters } from "@/lib/format";
 
 // Two thin panels on one shared date axis (never two y-scales on one plot):
 // share of the series sold on top, adjusted return per €1 below.
-const SOLD = "#B45309";
-const RETURN = "#0A6A4E";
-const PAPER = "#8A8F98";
+const SOLD = "var(--color-chart-sold)";
+const RETURN = "var(--color-chart-return)";
+const PAPER = "var(--color-chart-paper)";
 const GAP_DAYS = 10; // a longer gap between points is drawn as "no data"
 const W = 1000; // viewBox width; the SVG stretches to its container
 const H = 120; // viewBox height of each panel
@@ -126,10 +126,10 @@ export function HistoryChart({ locale, points, paper, labels }: Props) {
         <div className="relative">
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block w-full overflow-visible" style={{ height: H }} aria-hidden="true">
             {gaps.map(([a, b]) => (
-              <rect key={a} x={x(a)} y={0} width={x(b) - x(a)} height={H} fill="#EFEDE7" />
+              <rect key={a} x={x(a)} y={0} width={x(b) - x(a)} height={H} fill="var(--color-line-soft)" />
             ))}
             {ticks.map((v) => (
-              <line key={v} x1={0} x2={W} y1={y(v)} y2={y(v)} stroke={v === ticks[0] ? "#C9C6BC" : "#EFEDE7"} strokeWidth={1} vectorEffect="non-scaling-stroke" />
+              <line key={v} x1={0} x2={W} y1={y(v)} y2={y(v)} stroke={v === ticks[0] ? "var(--color-control)" : "var(--color-line-soft)"} strokeWidth={1} vectorEffect="non-scaling-stroke" />
             ))}
             {extra}
             {runs.map((run, i) => (
